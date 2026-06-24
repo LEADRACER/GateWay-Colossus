@@ -7,7 +7,6 @@ import { createProject } from '@/services/projects'
 import { parseGitHubUrl, fetchRepoInfo, fetchReadme } from '@/services/github'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Spinner } from '@/components/ui/Spinner'
 import { Card } from '@/components/ui/Card'
 
 export function NewProjectForm() {
@@ -108,40 +107,44 @@ export function NewProjectForm() {
           disabled={loading}
           onKeyDown={(e) => e.key === 'Enter' && handleFetch()}
         />
-        <Button onClick={handleFetch} disabled={loading || !url.trim()}>
-          {loading ? <Spinner /> : 'Fetch'}
+        <Button onClick={handleFetch} disabled={loading || !url.trim()} loading={loading}>
+          Fetch
         </Button>
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-error">{error}</p>}
 
       {preview && (
-        <Card className="p-4 space-y-4">
-          <div className="flex items-start gap-3">
+        <Card className="p-5 space-y-4">
+          <div className="flex items-start gap-3.5">
             <img
               src={preview.avatar}
               alt={preview.owner}
-              className="w-10 h-10 rounded-full"
+              className="w-10 h-10 rounded-full shrink-0 ring-1 ring-border"
             />
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-[#f5f5f5]">{preview.name}</h3>
-              <p className="text-sm text-[#a3a3a3] line-clamp-2">
+              <h3 className="font-semibold text-sm text-text">{preview.name}</h3>
+              <p className="text-sm text-text-muted line-clamp-2 mt-0.5">
                 {preview.description || 'No description'}
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs">
-            <span className="px-2 py-1 rounded bg-[#1a1a1a] text-[#a3a3a3]">
-              ⭐ {preview.stars}
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface-alt text-text-muted">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-text-dim/50">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              {preview.stars}
             </span>
             {preview.language && (
-              <span className="px-2 py-1 rounded bg-[#1a1a1a] text-[#00ff41]">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-accent-subtle text-accent">
+                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                 {preview.language}
               </span>
             )}
             {preview.license && (
-              <span className="px-2 py-1 rounded bg-[#1a1a1a] text-[#a3a3a3]">
+              <span className="px-2 py-1 rounded-md bg-surface-alt text-text-dim">
                 {preview.license}
               </span>
             )}
@@ -152,7 +155,7 @@ export function NewProjectForm() {
               {preview.topics.map((topic) => (
                 <span
                   key={topic}
-                  className="px-2 py-0.5 text-xs rounded-full bg-[#00ff41]/10 text-[#00ff41]"
+                  className="px-2 py-0.5 text-[11px] rounded-full border border-accent/20 bg-accent-subtle text-accent/90"
                 >
                   {topic}
                 </span>
@@ -163,9 +166,10 @@ export function NewProjectForm() {
           <Button
             onClick={handleSubmit}
             disabled={saving}
+            loading={saving}
             className="w-full"
           >
-            {saving ? <Spinner /> : `Add ${preview.name}`}
+            Add {preview.name}
           </Button>
         </Card>
       )}

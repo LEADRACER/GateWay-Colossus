@@ -3,20 +3,21 @@ type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info'
 interface BadgeProps {
   children: React.ReactNode
   variant?: BadgeVariant
+  className?: string
 }
 
 const variantMap: Record<BadgeVariant, string> = {
-  default: 'bg-[#1a1a1a] text-[#a3a3a3] border-[#333]',
-  success: 'bg-[#00ff41]/10 text-[#00ff41] border-[#00ff41]/30',
-  warning: 'bg-[#ffaa00]/10 text-[#ffaa00] border-[#ffaa00]/30',
-  error: 'bg-[#ff3355]/10 text-[#ff3355] border-[#ff3355]/30',
-  info: 'bg-[#3399ff]/10 text-[#3399ff] border-[#3399ff]/30',
+  default: 'bg-surface-alt text-text-muted border-border',
+  success: 'bg-accent-subtle text-accent border-accent/25',
+  warning: 'bg-warning/10 text-warning border-warning/25',
+  error: 'bg-error/10 text-error border-error/25',
+  info: 'bg-info/10 text-info border-info/25',
 }
 
-export function Badge({ children, variant = 'default' }: BadgeProps) {
+export function Badge({ children, variant = 'default', className = '' }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${variantMap[variant]}`}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium leading-none ${variantMap[variant]} ${className}`}
     >
       {children}
     </span>

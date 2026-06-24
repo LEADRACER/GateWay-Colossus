@@ -31,8 +31,10 @@ export default function NewProjectPage() {
   }
 
   return (
-    <div className="max-w-xl mx-auto px-6 py-12">
-      <h1 className="text-2xl font-bold text-[#f5f5f5] mb-8">New Project</h1>
+    <div className="max-w-xl mx-auto px-6 py-12 md:py-16">
+      <h1 className="text-xl md:text-2xl font-bold tracking-tight text-text mb-8">
+        New Project
+      </h1>
       <NewProjectForm />
     </div>
   )

@@ -9,6 +9,9 @@ import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import type { Project } from '@/lib/types/database'
+import Link from 'next/link'
+
+const statusOptions = ['all', 'active', 'in development', 'archived'] as const
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -43,51 +46,90 @@ export default function ProjectsPage() {
     return true
   })
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner /></div>
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <Spinner size="lg" />
+      </div>
+    )
+  }
+
   if (error) return <ErrorMessage message={error} />
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-[#f5f5f5]">Projects</h1>
-        <a href="/projects/new">
-          <Button>+ New</Button>
-        </a>
+    <div className="max-w-6xl mx-auto px-6 py-12 md:py-16">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-text">
+            Projects
+          </h1>
+          <p className="text-sm text-text-muted mt-1">
+            {projects.length} project{projects.length !== 1 ? 's' : ''} showcased
+          </p>
+        </div>
+        <Link href="/projects/new">
+          <Button>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            New Project
+          </Button>
+        </Link>
       </div>
 
-      <div className="flex gap-3 mb-6 flex-wrap">
-        <Input
-          placeholder="Search by name, description, or owner..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
-        {['all', 'active', 'in development', 'archived'].map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1.5 text-sm rounded transition-colors ${
-              statusFilter === s
-                ? 'bg-[#00ff41] text-[#0a0a0a] font-medium'
-                : 'bg-[#1a1a1a] text-[#a3a3a3] hover:text-[#f5f5f5]'
-            }`}
-          >
-            {s === 'all' ? 'All' : s}
-          </button>
-        ))}
-      </div>
-
-      {filtered.length === 0 ? (
-        <EmptyState
-          title={search || statusFilter !== 'all' ? 'No matching projects' : 'No projects yet'}
-          description={search || statusFilter !== 'all' ? 'Try adjusting your search or filters.' : 'Be the first to add a project.'}
-        />
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((p) => (
-            <ProjectCard key={p.id} project={p} />
+      {/* Search + Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-8">
+        <div className="flex-1 max-w-sm">
+          <Input
+            placeholder="Search projects..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          {statusOptions.map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-all duration-150 ${
+                statusFilter === s
+                  ? 'bg-accent text-[#050505] font-medium'
+                  : 'bg-surface-alt text-text-muted hover:text-text border border-transparent hover:border-border'
+              }`}
+            >
+              {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+            </button>
           ))}
         </div>
+      </div>
+
+      {/* Results */}
+      {filtered.length === 0 ? (
+        <EmptyState
+          title={
+            search || statusFilter !== 'all'
+              ? 'No matching projects'
+              : 'No projects yet'
+          }
+          description={
+            search || statusFilter !== 'all'
+              ? 'Try adjusting your search or filters.'
+              : 'Be the first to showcase your project.'
+          }
+        />
+      ) : (
+        <>
+          <p className="text-xs text-text-dim mb-4">
+            Showing {filtered.length} of {projects.length} projects
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((p) => (
+              <ProjectCard key={p.id} project={p} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

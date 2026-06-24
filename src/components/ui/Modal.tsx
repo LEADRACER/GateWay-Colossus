@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface ModalProps {
   open: boolean
@@ -24,26 +25,46 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
     }
   }, [open, handleKeyDown])
 
-  if (!open) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative z-10 w-full max-w-lg rounded-lg border border-[#333] bg-[#111] p-6 shadow-2xl">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-[#f5f5f5]">{title}</h2>
-          <button
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={onClose}
-            className="text-[#666] hover:text-[#f5f5f5] transition-colors"
+          />
+
+          {/* Panel */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 10 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="relative z-10 w-full max-w-lg rounded-xl border border-border bg-surface shadow-2xl"
           >
-            ✕
-          </button>
+            <div className="flex items-center justify-between px-6 pt-6 pb-0">
+              <h2 className="text-base font-semibold text-text">{title}</h2>
+              <button
+                onClick={onClose}
+                className="h-7 w-7 rounded-md flex items-center justify-center text-text-dim hover:text-text hover:bg-surface-alt transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6">
+              {children}
+            </div>
+          </motion.div>
         </div>
-        {children}
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   )
 }

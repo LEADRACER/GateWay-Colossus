@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Spinner } from '@/components/ui/Spinner'
 
 export function RegisterForm() {
   const [email, setEmail] = useState('')
@@ -31,9 +30,17 @@ export function RegisterForm() {
 
   if (success) {
     return (
-      <div className="text-center py-8">
-        <p className="text-[#00ff41] font-medium">Check your email to confirm your account.</p>
-        <p className="mt-2 text-sm text-[#a3a3a3]">We sent a confirmation link to {email}</p>
+      <div className="text-center py-8 space-y-3">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full border border-accent/25 bg-accent-subtle mb-2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+        </div>
+        <p className="text-sm font-medium text-text">Check your email</p>
+        <p className="text-sm text-text-muted">
+          We sent a confirmation link to <span className="text-text">{email}</span>
+        </p>
       </div>
     )
   }
@@ -55,15 +62,16 @@ export function RegisterForm() {
         onChange={(e) => setPassword(e.target.value)}
         placeholder="••••••••"
         minLength={6}
+        hint="At least 6 characters"
         required
       />
 
       {error && (
-        <p className="text-sm text-[#ff3355]">{error}</p>
+        <p className="text-sm text-error">{error}</p>
       )}
 
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? <Spinner size="sm" /> : 'Create Account'}
+      <Button type="submit" className="w-full" loading={loading}>
+        Create Account
       </Button>
     </form>
   )

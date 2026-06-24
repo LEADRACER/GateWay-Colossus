@@ -1,17 +1,18 @@
 interface SpinnerProps {
   size?: 'sm' | 'md' | 'lg'
+  className?: string
 }
 
 const sizeMap = {
-  sm: 'h-4 w-4 border-2',
-  md: 'h-6 w-6 border-2',
-  lg: 'h-8 w-8 border-3',
+  sm: 'h-4 w-4 border-[2px]',
+  md: 'h-5 w-5 border-[2px]',
+  lg: 'h-7 w-7 border-[2.5px]',
 }
 
-export function Spinner({ size = 'md' }: SpinnerProps) {
+export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
   return (
     <div
-      className={`animate-spin rounded-full border-[#333] border-t-[#00ff41] ${sizeMap[size]}`}
+      className={`rounded-full border-border border-t-accent animate-spin ${sizeMap[size]} ${className}`}
     />
   )
 }

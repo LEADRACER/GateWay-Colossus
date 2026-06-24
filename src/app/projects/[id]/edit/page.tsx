@@ -78,21 +78,32 @@ export default function EditProjectPage() {
     }
   }
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner /></div>
-  if (!project) return <p className="text-[#a3a3a3] text-center py-20">Not found</p>
+  if (loading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>
+  if (!project) return <p className="text-text-muted text-center py-24 text-sm">Project not found</p>
 
   return (
-    <div className="max-w-lg mx-auto px-6 py-12">
-      <h1 className="text-2xl font-bold text-[#f5f5f5] mb-6">Edit Project</h1>
+    <div className="max-w-lg mx-auto px-6 py-12 md:py-16">
+      <button
+        onClick={() => router.push(`/projects/${id}`)}
+        className="group inline-flex items-center gap-1.5 text-xs text-text-dim hover:text-text-muted transition-colors mb-8"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-x-0.5 transition-transform">
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+        Back
+      </button>
+
+      <h1 className="text-xl md:text-2xl font-bold tracking-tight text-text mb-6">Edit Project</h1>
       <Card className="p-6 space-y-4">
-        <div>
-          <label className="block text-sm text-[#a3a3a3] mb-1">GitHub URL</label>
-          <Input value={url} onChange={(e) => setUrl(e.target.value)} />
-        </div>
-        {error && <p className="text-sm text-red-400">{error}</p>}
-        <div className="flex gap-3">
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? <Spinner /> : 'Save'}
+        <Input
+          label="GitHub URL"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+        />
+        {error && <p className="text-sm text-error">{error}</p>}
+        <div className="flex gap-3 pt-2">
+          <Button onClick={handleSave} loading={saving}>
+            Save Changes
           </Button>
           <Button variant="ghost" onClick={() => router.push(`/projects/${id}`)}>
             Cancel
