@@ -27,7 +27,61 @@ export interface Project {
   cached_at?: string
   created_at: string
   updated_at: string
+  // Aggregated counts (computed via API)
+  like_count?: number
+  bookmark_count?: number
+  comment_count?: number
+  user_has_liked?: boolean
+  user_has_bookmarked?: boolean
 }
 
 export type ProjectStatus = Project['status']
 export type UserRole = Profile['role']
+
+export interface Like {
+  id: string
+  user_id: string
+  project_id: string
+  created_at: string
+}
+
+export interface Bookmark {
+  id: string
+  user_id: string
+  project_id: string
+  created_at: string
+}
+
+export interface Comment {
+  id: string
+  user_id: string
+  project_id: string
+  content: string
+  created_at: string
+  updated_at: string
+  // Joined fields
+  username?: string
+  avatar_url?: string
+}
+
+export type ActivityAction =
+  | 'project_created'
+  | 'project_liked'
+  | 'project_bookmarked'
+  | 'comment_added'
+  | 'project_submitted'
+  | 'project_approved'
+  | 'project_rejected'
+
+export interface Activity {
+  id: string
+  user_id: string
+  action: ActivityAction
+  project_id?: string
+  metadata: Record<string, unknown>
+  created_at: string
+  // Joined fields
+  username?: string
+  avatar_url?: string
+  project_name?: string
+}

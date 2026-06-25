@@ -25,11 +25,20 @@ export default function ProjectsPage() {
       const supabase = createClient()
       const { data, error } = await supabase
         .from('projects')
-        .select('*')
+        .select('*, likes:likes(count), bookmarks:bookmarks(count), comments:comments(count)')
         .order('created_at', { ascending: false })
 
       if (error) throw new Error(error.message)
-      setProjects(data as Project[])
+
+      // Flatten aggregated counts
+      const projectsWithCounts = (data as any[]).map((p) => ({
+        ...p,
+        like_count: p.likes?.[0]?.count ?? 0,
+        bookmark_count: p.bookmarks?.[0]?.count ?? 0,
+        comment_count: p.comments?.[0]?.count ?? 0,
+      }))
+
+      setProjects(projectsWithCounts as any)
     } catch (e: any) {
       setError(e.message)
     } finally {

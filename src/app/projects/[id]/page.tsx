@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { Modal } from '@/components/ui/Modal'
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer'
+import { LikeButton, BookmarkButton } from '@/components/ui/SocialButtons'
+import { CommentsSection } from '@/components/ui/CommentsSection'
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -208,7 +210,7 @@ export default function ProjectDetailPage() {
           )}
 
           {/* Action buttons */}
-          <div className="flex flex-wrap gap-2 mt-6 pt-5 border-t border-border">
+          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
             <a href={buildVisitUrl(project.owner, project.repo_name)} target="_blank" rel="noopener noreferrer">
               <Button variant="primary">
                 View on GitHub
@@ -229,6 +231,8 @@ export default function ProjectDetailPage() {
                 Download ZIP
               </Button>
             </a>
+            <LikeButton project={project} />
+            <BookmarkButton project={project} />
             <Button
               variant="ghost"
               onClick={handleRefresh}
@@ -281,6 +285,9 @@ export default function ProjectDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Comments */}
+      <CommentsSection projectId={id} />
 
       {/* Delete modal */}
       <Modal open={showDelete} onClose={() => setShowDelete(false)} title="Delete project?">
