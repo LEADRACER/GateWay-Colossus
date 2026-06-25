@@ -105,3 +105,30 @@ export interface Activity {
   avatar_url?: string
   project_name?: string
 }
+
+export interface APIKey {
+  id: string
+  user_id: string
+  name: string
+  key_hash: string
+  key_prefix: string
+  scopes: string[]
+  rate_limit: number
+  last_used_at?: string
+  expires_at?: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface Webhook {
+  id: string
+  user_id: string
+  url: string
+  secret: string
+  events: string[]
+  is_active: boolean
+  last_triggered_at?: string
+  last_status?: number
+  failure_count: number
+  created_at: string
+}
