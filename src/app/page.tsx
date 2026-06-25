@@ -1,9 +1,14 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import { RippleButton } from '@/components/ui/RippleButton'
 import { StatsSection } from '@/components/features/StatsSection'
+import { getFeaturedProjects, getTrendingProjects } from '@/services/discovery'
+import { Spinner } from '@/components/ui/Spinner'
+import { Flame, Star } from 'lucide-react'
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -19,6 +24,24 @@ const fadeUp = {
 } as const
 
 export default function HomePage() {
+  const [featured, setFeatured] = useState<any[]>([])
+  const [trending, setTrending] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const supabase = createClient()
+    Promise.all([
+      getFeaturedProjects(supabase),
+      getTrendingProjects(supabase, 5),
+    ])
+      .then(([f, t]) => {
+        setFeatured(f)
+        setTrending(t)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
   return (
     <div className="min-h-[90vh] flex flex-col">
       {/* Hero — asymmetric split */}
@@ -94,6 +117,110 @@ export default function HomePage() {
           <StatsSection />
         </div>
       </section>
+
+      {/* Featured Projects */}
+      {!loading && featured.length > 0 && (
+        <section className="border-t border-border bg-surface-alt/30">
+          <div className="max-w-6xl mx-auto w-full px-6 py-16">
+            <div className="flex items-center gap-2 mb-8">
+              <Star size={18} className="text-warning" fill="currentColor" />
+              <h2 className="text-xl font-bold text-text">Featured Projects</h2>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {featured.slice(0, 3).map((project) => (
+                <Link key={project.id} href={`/projects/${project.id}`}>
+                  <div className="rounded-xl border border-border bg-surface p-5 hover:border-accent/20 transition-colors h-full">
+                    <div className="flex items-center gap-3 mb-3">
+                      {project.repo_avatar ? (
+                        <img src={project.repo_avatar} alt={project.owner}
+                          className="w-8 h-8 rounded-full ring-1 ring-border" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-surface-alt ring-1 ring-border flex items-center justify-center">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-text-dim">
+                            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                          </svg>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm text-text truncate">{project.name}</h3>
+                        <p className="text-xs text-text-dim">{project.owner}/{project.repo_name}</p>
+                      </div>
+                    </div>
+                    {project.repo_description && (
+                      <p className="text-xs text-text-muted line-clamp-2 mb-3">{project.repo_description}</p>
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-text-dim">
+                      {project.repo_stars > 0 && (
+                        <span className="flex items-center gap-1">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="text-text-dim/50">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                          </svg>
+                          {project.repo_stars}
+                        </span>
+                      )}
+                      {project.repo_language && <span>{project.repo_language}</span>}
+                    </div>
+                    {project.featured_note && (
+                      <p className="text-xs text-accent mt-3 italic">★ {project.featured_note}</p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Trending Projects */}
+      {!loading && trending.length > 0 && (
+        <section className="border-t border-border">
+          <div className="max-w-6xl mx-auto w-full px-6 py-16">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-2">
+                <Flame size={18} className="text-danger" />
+                <h2 className="text-xl font-bold text-text">Trending Now</h2>
+              </div>
+              <Link href="/trending" className="text-sm text-accent hover:underline">
+                View all →
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {trending.slice(0, 5).map((project, index) => (
+                <Link key={project.id} href={`/projects/${project.id}`}>
+                  <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-alt transition-colors">
+                    <span className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${
+                      index < 3 ? 'bg-accent/10 text-accent' : 'bg-surface-alt text-text-dim'
+                    }`}>
+                      {index + 1}
+                    </span>
+                    {project.repo_avatar ? (
+                      <img src={project.repo_avatar} alt={project.owner}
+                        className="w-7 h-7 rounded-full ring-1 ring-border shrink-0" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-surface-alt ring-1 ring-border shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-text truncate">{project.name}</span>
+                      <span className="text-xs text-text-dim ml-2">{project.owner}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-text-dim shrink-0">
+                      {project.repo_stars > 0 && (
+                        <span className="flex items-center gap-1">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="text-text-dim/50">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                          </svg>
+                          {project.repo_stars}
+                        </span>
+                      )}
+                      {project.repo_language && <span className="hidden sm:inline">{project.repo_language}</span>}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   )
 }

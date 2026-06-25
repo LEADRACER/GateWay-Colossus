@@ -64,6 +64,26 @@ export interface Comment {
   avatar_url?: string
 }
 
+export interface Category {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  icon?: string
+  sort_order: number
+  created_at: string
+}
+
+export interface FeaturedProject {
+  id: string
+  project_id: string
+  featured_by: string
+  note?: string
+  starts_at: string
+  expires_at?: string
+  created_at: string
+}
+
 export type ActivityAction =
   | 'project_created'
   | 'project_liked'

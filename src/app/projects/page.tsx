@@ -2,14 +2,16 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { searchProjects, getDistinctLanguages } from '@/services/discovery'
 import { ProjectCard } from '@/components/features/project/ProjectCard'
+import { CategoryNav } from '@/components/ui/CategoryNav'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import type { Project } from '@/lib/types/database'
-import Link from 'next/link'
+import { Search, SlidersHorizontal, X } from 'lucide-react'
 
 const statusOptions = ['all', 'active', 'in development', 'archived'] as const
 
@@ -19,122 +21,185 @@ export default function ProjectsPage() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
+  const [languageFilter, setLanguageFilter] = useState<string>('')
+  const [languages, setLanguages] = useState<string[]>([])
+  const [showFilters, setShowFilters] = useState(false)
 
   const load = useCallback(async () => {
+    setLoading(true)
+    setError('')
     try {
       const supabase = createClient()
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*, likes:likes(count), bookmarks:bookmarks(count), comments:comments(count)')
-        .order('created_at', { ascending: false })
-
-      if (error) throw new Error(error.message)
-
-      // Flatten aggregated counts
-      const projectsWithCounts = (data as any[]).map((p) => ({
-        ...p,
-        like_count: p.likes?.[0]?.count ?? 0,
-        bookmark_count: p.bookmarks?.[0]?.count ?? 0,
-        comment_count: p.comments?.[0]?.count ?? 0,
-      }))
-
-      setProjects(projectsWithCounts as any)
+      const data = await searchProjects(supabase, search, {
+        category: categoryFilter || undefined,
+        language: languageFilter || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+      })
+      setProjects(data as Project[])
     } catch (e: any) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [search, categoryFilter, statusFilter, languageFilter])
 
   useEffect(() => { load() }, [load])
 
-  const filtered = projects.filter((p) => {
-    const q = search.toLowerCase()
-    if (q && !p.name.toLowerCase().includes(q) && !p.repo_description?.toLowerCase().includes(q) && !p.owner.toLowerCase().includes(q)) return false
-    if (statusFilter !== 'all' && p.status !== statusFilter) return false
-    return true
-  })
+  useEffect(() => {
+    const supabase = createClient()
+    getDistinctLanguages(supabase).then(setLanguages).catch(() => {})
+  }, [])
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <Spinner size="lg" />
-      </div>
-    )
+  const hasFilters = categoryFilter || languageFilter || statusFilter !== 'all'
+
+  function clearFilters() {
+    setSearch('')
+    setCategoryFilter(null)
+    setLanguageFilter('')
+    setStatusFilter('all')
   }
-
-  if (error) return <ErrorMessage message={error} />
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12 md:py-16">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-text">
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-text)', margin: 0, letterSpacing: '-0.02em' }}>
             Projects
           </h1>
-          <p className="text-sm text-text-muted mt-1">
-            {projects.length} project{projects.length !== 1 ? 's' : ''} showcased
+          <p style={{ fontSize: 14, color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
+            {projects.length} project{projects.length !== 1 ? 's' : ''} found
           </p>
         </div>
-        <Link href="/projects/new">
-          <Button>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            New Project
-          </Button>
-        </Link>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={14} color="var(--color-text-dim)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+            <input type="text" placeholder="Search projects..." value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                padding: '8px 12px 8px 30px', borderRadius: 8,
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
+                fontSize: 13, color: 'var(--color-text)',
+                outline: 'none', width: 220,
+                transition: 'border-color 0.15s',
+              }}
+              onFocus={e => e.target.style.borderColor = 'var(--color-accent)'}
+              onBlur={e => e.target.style.borderColor = 'var(--color-border)'}
+            />
+          </div>
+          <button onClick={() => setShowFilters(!showFilters)}
+            style={{
+              padding: '8px 12px', borderRadius: 8,
+              border: `1px solid ${showFilters ? 'var(--color-accent)' : 'var(--color-border)'}`,
+              background: showFilters ? 'var(--color-accent-bg)' : 'var(--color-surface)',
+              color: showFilters ? 'var(--color-accent)' : 'var(--color-text-muted)',
+              cursor: 'pointer', fontSize: 13,
+              display: 'flex', alignItems: 'center', gap: 6,
+              transition: 'all 0.15s',
+            }}>
+            <SlidersHorizontal size={14} />
+            Filters
+            {hasFilters && (
+              <span style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: 'var(--color-accent)',
+              }} />
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Search + Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-8">
-        <div className="flex-1 max-w-sm">
-          <Input
-            placeholder="Search projects..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-1.5 flex-wrap">
-          {statusOptions.map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-all duration-150 ${
-                statusFilter === s
-                  ? 'bg-accent text-[#050505] font-medium'
-                  : 'bg-surface-alt text-text-muted hover:text-text border border-transparent hover:border-border'
-              }`}
-            >
-              {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
-        </div>
+      {/* Category nav */}
+      <div style={{ marginBottom: 16 }}>
+        <CategoryNav selected={categoryFilter} onSelect={setCategoryFilter} />
       </div>
+
+      {/* Advanced filters panel */}
+      {showFilters && (
+        <div style={{
+          padding: 16, borderRadius: 12,
+          border: '1px solid var(--color-border)',
+          background: 'var(--color-surface)',
+          marginBottom: 20,
+          display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center',
+        }}>
+          {/* Status filter */}
+          <div>
+            <label style={{ fontSize: 11, color: 'var(--color-text-dim)', display: 'block', marginBottom: 4, fontWeight: 500 }}>
+              Status
+            </label>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+              style={{
+                padding: '6px 10px', borderRadius: 6,
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface-2)',
+                fontSize: 12, color: 'var(--color-text)',
+                outline: 'none', cursor: 'pointer',
+              }}>
+              {statusOptions.map(s => (
+                <option key={s} value={s}>{s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Language filter */}
+          <div>
+            <label style={{ fontSize: 11, color: 'var(--color-text-dim)', display: 'block', marginBottom: 4, fontWeight: 500 }}>
+              Language
+            </label>
+            <select value={languageFilter} onChange={e => setLanguageFilter(e.target.value)}
+              style={{
+                padding: '6px 10px', borderRadius: 6,
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface-2)',
+                fontSize: 12, color: 'var(--color-text)',
+                outline: 'none', cursor: 'pointer',
+              }}>
+              <option value="">All</option>
+              {languages.map(l => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+          </div>
+
+          {hasFilters && (
+            <button onClick={clearFilters}
+              style={{
+                padding: '6px 12px', borderRadius: 6,
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface-2)',
+                color: 'var(--color-text-muted)',
+                cursor: 'pointer', fontSize: 12,
+                display: 'flex', alignItems: 'center', gap: 4,
+                marginLeft: 'auto',
+              }}>
+              <X size={12} /> Clear
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Results */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <Spinner size="lg" />
+        </div>
+      ) : error ? (
+        <ErrorMessage message={error} />
+      ) : projects.length === 0 ? (
         <EmptyState
-          title={
-            search || statusFilter !== 'all'
-              ? 'No matching projects'
-              : 'No projects yet'
-          }
-          description={
-            search || statusFilter !== 'all'
-              ? 'Try adjusting your search or filters.'
-              : 'Be the first to showcase your project.'
-          }
+          title={hasFilters || search ? 'No matching projects' : 'No projects yet'}
+          description={hasFilters || search ? 'Try adjusting your search or filters.' : 'Be the first to showcase your project.'}
         />
       ) : (
         <>
-          <p className="text-xs text-text-dim mb-4">
-            Showing {filtered.length} of {projects.length} projects
+          <p style={{ fontSize: 12, color: 'var(--color-text-dim)', marginBottom: 16 }}>
+            Showing {projects.length} project{projects.length !== 1 ? 's' : ''}
           </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((p) => (
+          <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+            {projects.map((p) => (
               <ProjectCard key={p.id} project={p} />
             ))}
           </div>
