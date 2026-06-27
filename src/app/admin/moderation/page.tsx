@@ -6,12 +6,14 @@ import { createClient } from '@/lib/supabase/client'
 import { moderateProject } from '@/services/admin'
 import type { Project } from '@/lib/types/database'
 import { Spinner } from '@/components/ui/Spinner'
-import { CheckCircle, XCircle, ExternalLink } from 'lucide-react'
+import { CheckCircle, XCircle, ExternalLink, RefreshCw } from 'lucide-react'
 
 export default function ModerationPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [syncing, setSyncing] = useState<string | null>(null)
+  const [syncMsg, setSyncMsg] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -43,6 +45,25 @@ export default function ModerationPage() {
       // fail silently
     } finally {
       setActionLoading(null)
+    }
+  }
+
+  async function handleSync(projectId: string) {
+    setSyncing(projectId)
+    setSyncMsg(null)
+    try {
+      const res = await fetch('/api/projects/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_id: projectId }),
+      })
+      const data = await res.json()
+      setSyncMsg(data.success ? `✓ Synced — ${data.data.repo_stars} stars` : `✗ ${data.error}`)
+      if (data.success) await load()
+    } catch {
+      setSyncMsg('✗ Sync failed')
+    } finally {
+      setSyncing(null)
     }
   }
 
@@ -142,6 +163,25 @@ export default function ModerationPage() {
 
               {/* Actions */}
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <button
+                  onClick={() => handleSync(project.id)}
+                  disabled={syncing === project.id}
+                  title="Sync GitHub data"
+                  style={{
+                    padding: '8px 10px', borderRadius: 8,
+                    background: 'var(--color-surface-2)',
+                    color: 'var(--color-text-muted)',
+                    border: '1px solid var(--color-border)',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    fontSize: 12, fontWeight: 500,
+                    opacity: syncing === project.id ? 0.6 : 1,
+                    transition: 'opacity 0.2s',
+                  }}
+                >
+                  <RefreshCw size={14} style={{ animation: syncing === project.id ? 'spin 1s linear infinite' : 'none' }} />
+                  Sync
+                </button>
                 <button
                   onClick={() => handleModerate(project.id, 'approve')}
                   disabled={actionLoading === project.id}

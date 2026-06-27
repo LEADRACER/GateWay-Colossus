@@ -65,6 +65,11 @@ export function LoginForm() {
         <p className="text-sm text-error">{error}</p>
       )}
 
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-text-dim">Don't have an account? <a href="/auth/register" className="text-accent hover:underline">Register</a></p>
+        <a href="/auth/forgot-password" className="text-sm text-accent hover:underline">Forgot password?</a>
+      </div>
+
       <Button type="submit" className="w-full" loading={loading}>
         Sign In
       </Button>

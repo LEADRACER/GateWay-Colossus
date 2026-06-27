@@ -135,3 +135,118 @@ export async function setUserRole(
 ) {
   return updateUserRole(client, userId, role)
 }
+
+// ── Member permission management ────────────────────────────────────────
+
+export interface MemberPermission {
+  id: string
+  username: string
+  role: string
+  can_add_projects: boolean
+  project_count: number
+  created_at: string
+}
+
+export async function getMemberPermissions(client: TypedSupabaseClient): Promise<MemberPermission[]> {
+  const { data, error } = await client
+    .from('profiles')
+    .select('id, username, role, can_add_projects, projects:projects(count), created_at')
+    .in('role', ['member', 'admin'])
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(error.message)
+  return (data || []).map((u: any) => ({
+    id: u.id,
+    username: u.username,
+    role: u.role,
+    can_add_projects: u.can_add_projects ?? false,
+    project_count: u.projects?.[0]?.count ?? 0,
+    created_at: u.created_at,
+  }))
+}
+
+export async function toggleCanAddProject(
+  client: TypedSupabaseClient,
+  userId: string,
+  canAdd: boolean
+) {
+  const { error } = await client
+    .from('profiles')
+    .update({ can_add_projects: canAdd })
+    .eq('id', userId)
+
+  if (error) throw new Error(error.message)
+}
+
+// ── Permission requests ─────────────────────────────────────────────────
+
+export interface PermissionRequest {
+  id: string
+  user_id: string
+  username?: string
+  status: 'pending' | 'approved' | 'denied'
+  created_at: string
+}
+
+export async function getPermissionRequests(client: TypedSupabaseClient): Promise<PermissionRequest[]> {
+  const { data, error } = await client
+    .from('permission_requests')
+    .select('*, profiles!inner(username)')
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  if (error) throw new Error(error.message)
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    user_id: r.user_id,
+    username: r.profiles?.username,
+    status: r.status,
+    created_at: r.created_at,
+  }))
+}
+
+export async function handlePermissionRequest(
+  client: TypedSupabaseClient,
+  requestId: string,
+  action: 'approve' | 'deny'
+) {
+  // Get the request
+  const { data: req, error: reqErr } = await client
+    .from('permission_requests')
+    .select('*')
+    .eq('id', requestId)
+    .single()
+  if (reqErr || !req) throw new Error('Request not found')
+
+  // Update request status
+  const { error: updateErr } = await client
+    .from('permission_requests')
+    .update({ status: action === 'approve' ? 'approved' : 'denied', updated_at: new Date().toISOString() })
+    .eq('id', requestId)
+  if (updateErr) throw new Error(updateErr.message)
+
+  // If approved, grant permission
+  if (action === 'approve') {
+    await toggleCanAddProject(client, req.user_id, true)
+  }
+}
+
+export async function requestAddProjectPermission(client: TypedSupabaseClient) {
+  const { data: { user } } = await client.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  // Check if already has a pending request
+  const { data: existing } = await client
+    .from('permission_requests')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('status', 'pending')
+    .maybeSingle()
+  if (existing) throw new Error('You already have a pending request')
+
+  const { error } = await client
+    .from('permission_requests')
+    .insert({ user_id: user.id })
+
+  if (error) throw new Error(error.message)
+}

@@ -42,3 +42,15 @@ export async function signInWithGoogle(client: TypedSupabaseClient) {
   if (error) throw new Error(error.message)
   return data
 }
+
+export async function resetPassword(client: TypedSupabaseClient, email: string) {
+  const { error } = await client.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/auth/reset-password`,
+  })
+  if (error) throw new Error(error.message)
+}
+
+export async function updatePassword(client: TypedSupabaseClient, password: string) {
+  const { error } = await client.auth.updateUser({ password })
+  if (error) throw new Error(error.message)
+}

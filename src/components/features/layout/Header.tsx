@@ -46,6 +46,12 @@ export function Header() {
           ) : user ? (
             <div className="flex items-center gap-1 ml-2">
               <a
+                href="/bookmarks"
+                className="px-3 py-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-alt transition-colors"
+              >
+                Bookmarks
+              </a>
+              <a
                 href={`/profile/${user.id}`}
                 className="px-3 py-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-alt transition-colors"
               >

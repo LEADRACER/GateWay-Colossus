@@ -37,6 +37,7 @@ export function UserMenu() {
 
   return (
     <div className="flex items-center gap-3">
+      <a href="/bookmarks" className="text-sm text-[#a3a3a3] hover:text-text transition-colors">Bookmarks</a>
       <span className="text-sm text-[#a3a3a3]">{user.email}</span>
       <Button variant="ghost" size="sm" onClick={handleSignOut}>
         Sign Out

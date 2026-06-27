@@ -4,7 +4,6 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import type { Project } from '@/lib/types/database'
 import { Badge } from '@/components/ui/Badge'
-import { TiltCard } from '@/components/ui/TiltCard'
 import { ProjectPreview } from '@/components/ui/ProjectPreview'
 import { LikeButton, BookmarkButton } from '@/components/ui/SocialButtons'
 
@@ -29,9 +28,7 @@ export function ProjectCard({ project }: Props) {
       transition={{ type: 'spring', stiffness: 300, damping: 24 }}
     >
       <ProjectPreview project={project}>
-      <TiltCard className="h-full">
-        <div className="rounded-xl border border-border bg-surface p-5 h-full group
-          hover:border-accent/20 hover:bg-surface-alt/50 transition-colors duration-200"
+        <div className="rounded-xl border border-border bg-surface p-5 h-full group"
         >
           {/* Header with link */}
           <Link href={`/projects/${project.id}`}>
@@ -93,7 +90,6 @@ export function ProjectCard({ project }: Props) {
             <BookmarkButton project={project} size="sm" />
           </div>
         </div>
-      </TiltCard>
       </ProjectPreview>
     </motion.div>
   )

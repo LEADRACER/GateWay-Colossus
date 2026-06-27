@@ -7,8 +7,28 @@ import { CursorTrail } from '@/components/CursorTrail'
 import { ToastProvider } from '@/components/ui/Toast'
 
 export const metadata: Metadata = {
-  title: 'GateWay:Colossus',
-  description: 'A community project showcase — built by Akhil, powered by the collective.',
+  title: {
+    default: 'GateWay:Colossus',
+    template: '%s — GateWay:Colossus',
+  },
+  description: 'A community project showcase — discover, explore, and share open-source projects.',
+  openGraph: {
+    title: 'GateWay:Colossus',
+    description: 'A community project showcase — discover, explore, and share open-source projects.',
+    url: 'https://gateway-colossus.vercel.app',
+    siteName: 'GateWay:Colossus',
+    type: 'website',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'GateWay:Colossus',
+    description: 'A community project showcase — discover, explore, and share open-source projects.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({

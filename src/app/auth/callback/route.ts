@@ -10,6 +10,22 @@ export async function GET(request: Request) {
     const supabase = await createServerSupabaseClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      // Ensure profile exists for new users
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (!existing) {
+          await supabase.from('profiles').insert({
+            id: user.id,
+            username: user.email?.split('@')[0] || `user_${user.id.slice(0, 6)}`,
+          })
+        }
+      }
       return NextResponse.redirect(`${origin}${next}`)
     }
   }

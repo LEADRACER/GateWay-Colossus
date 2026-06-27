@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, type ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 
 interface TiltCardProps {
   children: ReactNode
@@ -11,7 +11,8 @@ interface TiltCardProps {
 
 export function TiltCard({ children, className = '', maxTilt = 8, glare = true }: TiltCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
-  const [transform, setTransform] = useState({ rotateX: 0, rotateY: 0, glareX: 50, glareY: 50, glareOpacity: 0 })
+  const glareRef = useRef<HTMLDivElement>(null)
+  const rafRef = useRef<number>(0)
 
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
     if (!cardRef.current) return
@@ -24,41 +25,56 @@ export function TiltCard({ children, className = '', maxTilt = 8, glare = true }
     const rotateY = ((x - centerX) / centerX) * maxTilt
     const rotateX = -((y - centerY) / centerY) * maxTilt
 
-    setTransform({
-      rotateX,
-      rotateY,
-      glareX: (x / rect.width) * 100,
-      glareY: (y / rect.height) * 100,
-      glareOpacity: 0.12,
+    cancelAnimationFrame(rafRef.current)
+    rafRef.current = requestAnimationFrame(() => {
+      if (cardRef.current) {
+        cardRef.current.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`
+      }
+      if (glareRef.current) {
+        glareRef.current.style.background =
+          `radial-gradient(circle at ${(x / rect.width) * 100}% ${(y / rect.height) * 100}%, oklch(0.75 0.25 145 / 0.12), transparent 60%)`
+      }
     })
   }
 
   function handleMouseLeave() {
-    setTransform({ rotateX: 0, rotateY: 0, glareX: 50, glareY: 50, glareOpacity: 0 })
+    cancelAnimationFrame(rafRef.current)
+    rafRef.current = requestAnimationFrame(() => {
+      if (cardRef.current) {
+        cardRef.current.style.transform = 'rotateX(0deg) rotateY(0deg)'
+      }
+      if (glareRef.current) {
+        glareRef.current.style.background = ''
+      }
+    })
   }
 
   return (
     <div
-      ref={cardRef}
       className={`perspective-1000 ${className}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      style={{
-        transform: `rotateX(${transform.rotateX}deg) rotateY(${transform.rotateY}deg)`,
-        transition: (transform.rotateX === 0 && transform.rotateY === 0) ? 'transform 0.4s ease-out' : 'transform 0.1s ease-out',
-        transformStyle: 'preserve-3d',
-      }}
     >
-      {children}
-      {glare && (
-        <div
-          className="absolute inset-0 pointer-events-none rounded-xl"
-          style={{
-            background: `radial-gradient(circle at ${transform.glareX}% ${transform.glareY}%, oklch(0.75 0.25 145 / ${transform.glareOpacity}), transparent 60%)`,
-            transition: (transform.rotateX === 0 && transform.rotateY === 0) ? 'background 0.4s ease-out' : 'background 0.1s ease-out',
-          }}
-        />
-      )}
+      <div
+        ref={cardRef}
+        style={{
+          transformStyle: 'preserve-3d',
+          transition: 'transform 0.3s ease-out',
+          willChange: 'transform',
+        }}
+      >
+        {children}
+        {glare && (
+          <div
+            ref={glareRef}
+            className="absolute inset-0 pointer-events-none rounded-xl"
+            style={{
+              transition: 'background 0.3s ease-out',
+              willChange: 'background',
+            }}
+          />
+        )}
+      </div>
     </div>
   )
 }

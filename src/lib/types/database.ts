@@ -5,6 +5,7 @@ export interface Profile {
   avatar_url?: string
   bio?: string
   role: 'admin' | 'member' | 'viewer'
+  can_add_projects?: boolean
   created_at: string
   updated_at: string
 }

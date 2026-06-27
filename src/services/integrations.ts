@@ -138,6 +138,141 @@ export async function deleteWebhook(client: TypedSupabaseClient, webhookId: stri
   if (error) throw new Error(error.message)
 }
 
+// ── Webhook Delivery Logs ──────────────────────────────────────────────
+
+export interface WebhookDelivery {
+  id: string
+  webhook_id: string
+  event: string
+  payload: any
+  status_code?: number
+  response_body?: string
+  duration_ms?: number
+  success?: boolean
+  created_at: string
+}
+
+export async function getWebhookDeliveries(
+  client: TypedSupabaseClient,
+  webhookId?: string,
+  limit = 20
+): Promise<WebhookDelivery[]> {
+  let query = client
+    .from('webhook_deliveries')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (webhookId) {
+    query = query.eq('webhook_id', webhookId)
+  }
+
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+  return data as WebhookDelivery[]
+}
+
+// ── Webhook Delivery ───────────────────────────────────────────────────
+
+export async function deliverWebhook(
+  webhook: Webhook,
+  event: string,
+  payload: any
+): Promise<{ success: boolean; statusCode?: number; responseBody?: string; durationMs?: number }> {
+  const start = Date.now()
+  try {
+    // Compute HMAC signature
+    const encoder = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+      'raw', encoder.encode(webhook.secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false, ['sign']
+    )
+    const signature = await crypto.subtle.sign(
+      'HMAC', key,
+      encoder.encode(JSON.stringify(payload))
+    )
+    const sigHex = Array.from(new Uint8Array(signature))
+      .map(b => b.toString(16).padStart(2, '0')).join('')
+
+    const res = await fetch(webhook.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Webhook-Event': event,
+        'X-Webhook-Signature': `sha256=${sigHex}`,
+        'User-Agent': 'GateWay:Colossus/1.0',
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10000),
+    })
+
+    const responseBody = await res.text()
+    const durationMs = Date.now() - start
+
+    return {
+      success: res.ok,
+      statusCode: res.status,
+      responseBody: responseBody.slice(0, 2000),
+      durationMs,
+    }
+  } catch {
+    const durationMs = Date.now() - start
+    return { success: false, durationMs, statusCode: 0 }
+  }
+}
+
+export async function retryWebhookDelivery(
+  client: TypedSupabaseClient,
+  deliveryId: string
+): Promise<{ success: boolean; statusCode?: number }> {
+  // Get the failed delivery
+  const { data: delivery, error: delErr } = await client
+    .from('webhook_deliveries')
+    .select('*')
+    .eq('id', deliveryId)
+    .single()
+
+  if (delErr || !delivery) throw new Error('Delivery not found')
+
+  // Get the associated webhook
+  const { data: webhook, error: whErr } = await client
+    .from(WEBHOOK_TABLE)
+    .select('*')
+    .eq('id', delivery.webhook_id)
+    .single()
+
+  if (whErr || !webhook) throw new Error('Webhook not found')
+  if (!webhook.is_active) throw new Error('Webhook is disabled')
+
+  // Re-deliver
+  const result = await deliverWebhook(webhook as Webhook, delivery.event, delivery.payload)
+
+  // Log the new delivery
+  await client.from('webhook_deliveries').insert({
+    webhook_id: delivery.webhook_id,
+    event: delivery.event,
+    payload: delivery.payload,
+    status_code: result.statusCode,
+    response_body: result.responseBody,
+    duration_ms: result.durationMs,
+    success: result.success,
+  })
+
+  // Update webhook status
+  const newFailureCount = result.success ? 0 : webhook.failure_count + 1
+  await client
+    .from(WEBHOOK_TABLE)
+    .update({
+      last_triggered_at: new Date().toISOString(),
+      last_status: result.statusCode,
+      failure_count: newFailureCount,
+    })
+    .eq('id', delivery.webhook_id)
+
+  return { success: result.success, statusCode: result.statusCode }
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────
 
 async function hashKey(key: string): Promise<string> {

@@ -82,6 +82,7 @@ export function NewProjectForm() {
         owner: preview.owner,
         repo_name: preview.repo,
         repo_description: preview.description || undefined,
+        repo_readme: preview.readme || undefined,
         repo_language: preview.language || undefined,
         repo_topics: preview.topics,
         repo_stars: preview.stars,

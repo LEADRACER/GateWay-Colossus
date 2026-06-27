@@ -110,6 +110,25 @@ export async function getUserBookmarks(client: TypedSupabaseClient, userId: stri
   return data.map((b) => b.project_id)
 }
 
+export async function getUserBookmarkedProjects(client: TypedSupabaseClient): Promise<any[]> {
+  const { data: { user } } = await client.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data, error } = await client
+    .from('bookmarks')
+    .select('*, projects!inner(*, likes:likes(count), bookmarks:bookmarks(count), comments:comments(count))')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(error.message)
+  return (data || []).map((b: any) => ({
+    ...b.projects,
+    like_count: b.projects.likes?.[0]?.count ?? 0,
+    bookmark_count: b.projects.bookmarks?.[0]?.count ?? 0,
+    comment_count: b.projects.comments?.[0]?.count ?? 0,
+  }))
+}
+
 // ── Comments ───────────────────────────────────────────────────────────
 
 export async function addComment(client: TypedSupabaseClient, projectId: string, content: string) {

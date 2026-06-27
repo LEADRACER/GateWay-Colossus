@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { searchProjects, getDistinctLanguages } from '@/services/discovery'
+import { searchProjects, getDistinctLanguages, countProjects } from '@/services/discovery'
+import { requestAddProjectPermission } from '@/services/admin'
 import { ProjectCard } from '@/components/features/project/ProjectCard'
 import { CategoryNav } from '@/components/ui/CategoryNav'
 import { Input } from '@/components/ui/Input'
@@ -11,12 +13,14 @@ import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import type { Project } from '@/lib/types/database'
-import { Search, SlidersHorizontal, X } from 'lucide-react'
+import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const statusOptions = ['all', 'active', 'in development', 'archived'] as const
+const PAGE_SIZE = 20
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
@@ -25,30 +29,74 @@ export default function ProjectsPage() {
   const [languageFilter, setLanguageFilter] = useState<string>('')
   const [languages, setLanguages] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
+  const [user, setUser] = useState<{ id: string } | null>(null)
+  const [canAdd, setCanAdd] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  const totalPages = Math.ceil(total / PAGE_SIZE) || 1
+
+  // Debounce search input
+  useEffect(() => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current)
+    searchTimeout.current = setTimeout(() => {
+      setDebouncedSearch(search)
+      setPage(1)
+    }, 250)
+    return () => { if (searchTimeout.current) clearTimeout(searchTimeout.current) }
+  }, [search])
 
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
       const supabase = createClient()
-      const data = await searchProjects(supabase, search, {
-        category: categoryFilter || undefined,
-        language: languageFilter || undefined,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-      })
+      const offset = (page - 1) * PAGE_SIZE
+
+      const [data, count] = await Promise.all([
+        searchProjects(supabase, debouncedSearch, {
+          language: languageFilter || undefined,
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+        }, { offset, limit: PAGE_SIZE }),
+        countProjects(supabase, debouncedSearch, {
+          language: languageFilter || undefined,
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+        }),
+      ])
       setProjects(data as Project[])
+      setTotal(count)
     } catch (e: any) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
-  }, [search, categoryFilter, statusFilter, languageFilter])
+  }, [debouncedSearch, categoryFilter, statusFilter, languageFilter, page])
 
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
     const supabase = createClient()
     getDistinctLanguages(supabase).then(setLanguages).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(async ({ data }) => {
+      setUser(data.user)
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, can_add_projects')
+          .eq('id', data.user.id)
+          .single()
+        if (profile) {
+          setUserRole(profile.role)
+          setCanAdd(profile.role === 'admin' || (profile.role === 'member' && profile.can_add_projects === true))
+        }
+      }
+    })
   }, [])
 
   const hasFilters = categoryFilter || languageFilter || statusFilter !== 'all'
@@ -58,6 +106,29 @@ export default function ProjectsPage() {
     setCategoryFilter(null)
     setLanguageFilter('')
     setStatusFilter('all')
+    setPage(1)
+  }
+
+  function goPage(p: number) {
+    if (p < 1 || p > totalPages) return
+    setPage(p)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function getPageNumbers(): (number | '...')[] {
+    const pages: (number | '...')[] = []
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i)
+    } else {
+      pages.push(1)
+      if (page > 3) pages.push('...')
+      const start = Math.max(2, page - 1)
+      const end = Math.min(totalPages - 1, page + 1)
+      for (let i = start; i <= end; i++) pages.push(i)
+      if (page < totalPages - 2) pages.push('...')
+      pages.push(totalPages)
+    }
+    return pages
   }
 
   return (
@@ -69,10 +140,35 @@ export default function ProjectsPage() {
             Projects
           </h1>
           <p style={{ fontSize: 14, color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
-            {projects.length} project{projects.length !== 1 ? 's' : ''} found
+            {total} project{total !== 1 ? 's' : ''} found
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {canAdd ? (
+          <Link href="/projects/new">
+            <button
+              style={{
+                padding: '8px 14px', borderRadius: 8,
+                background: 'var(--color-accent)',
+                color: '#fff',
+                border: 'none',
+                cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: 6,
+                transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Add Project
+            </button>
+          </Link>
+          ) : userRole === 'member' ? (
+            <RequestPermissionButton />
+          ) : null}
           <div style={{ position: 'relative' }}>
             <Search size={14} color="var(--color-text-dim)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
             <input type="text" placeholder="Search projects..." value={search}
@@ -130,7 +226,7 @@ export default function ProjectsPage() {
             <label style={{ fontSize: 11, color: 'var(--color-text-dim)', display: 'block', marginBottom: 4, fontWeight: 500 }}>
               Status
             </label>
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+            <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
               style={{
                 padding: '6px 10px', borderRadius: 6,
                 border: '1px solid var(--color-border)',
@@ -149,7 +245,7 @@ export default function ProjectsPage() {
             <label style={{ fontSize: 11, color: 'var(--color-text-dim)', display: 'block', marginBottom: 4, fontWeight: 500 }}>
               Language
             </label>
-            <select value={languageFilter} onChange={e => setLanguageFilter(e.target.value)}
+            <select value={languageFilter} onChange={e => { setLanguageFilter(e.target.value); setPage(1) }}
               style={{
                 padding: '6px 10px', borderRadius: 6,
                 border: '1px solid var(--color-border)',
@@ -190,21 +286,145 @@ export default function ProjectsPage() {
         <ErrorMessage message={error} />
       ) : projects.length === 0 ? (
         <EmptyState
-          title={hasFilters || search ? 'No matching projects' : 'No projects yet'}
-          description={hasFilters || search ? 'Try adjusting your search or filters.' : 'Be the first to showcase your project.'}
+          title={hasFilters || debouncedSearch ? 'No matching projects' : 'No projects yet'}
+          description={hasFilters || debouncedSearch ? 'Try adjusting your search or filters.' : 'Be the first to showcase your project.'}
         />
       ) : (
         <>
-          <p style={{ fontSize: 12, color: 'var(--color-text-dim)', marginBottom: 16 }}>
-            Showing {projects.length} project{projects.length !== 1 ? 's' : ''}
-          </p>
           <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
             {projects.map((p) => (
               <ProjectCard key={p.id} project={p} />
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{
+              display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4,
+              marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--color-border)',
+            }}>
+              <button
+                onClick={() => goPage(page - 1)}
+                disabled={page <= 1}
+                style={{
+                  padding: '6px 10px', borderRadius: 6,
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  color: page <= 1 ? 'var(--color-text-dim)' : 'var(--color-text)',
+                  cursor: page <= 1 ? 'not-allowed' : 'pointer',
+                  fontSize: 13, display: 'flex', alignItems: 'center',
+                  opacity: page <= 1 ? 0.4 : 1,
+                }}
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              {getPageNumbers().map((p, i) =>
+                p === '...' ? (
+                  <span key={`dot-${i}`} style={{ padding: '0 4px', color: 'var(--color-text-dim)', fontSize: 13 }}>
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => goPage(p)}
+                    style={{
+                      width: 32, height: 32, borderRadius: 6,
+                      border: p === page ? '1px solid var(--color-accent)' : '1px solid transparent',
+                      background: p === page ? 'var(--color-accent-bg)' : 'transparent',
+                      color: p === page ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                      cursor: 'pointer', fontSize: 13, fontWeight: p === page ? 600 : 400,
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { if (p !== page) { e.currentTarget.style.background = 'var(--color-surface)'; e.currentTarget.style.color = 'var(--color-text)'; }}}
+                    onMouseLeave={e => { if (p !== page) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-muted)'; }}}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+
+              <button
+                onClick={() => goPage(page + 1)}
+                disabled={page >= totalPages}
+                style={{
+                  padding: '6px 10px', borderRadius: 6,
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  color: page >= totalPages ? 'var(--color-text-dim)' : 'var(--color-text)',
+                  cursor: page >= totalPages ? 'not-allowed' : 'pointer',
+                  fontSize: 13, display: 'flex', alignItems: 'center',
+                  opacity: page >= totalPages ? 0.4 : 1,
+                }}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>
+  )
+}
+
+function RequestPermissionButton() {
+  const [requesting, setRequesting] = useState(false)
+  const [done, setDone] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function handleRequest() {
+    setRequesting(true)
+    setErr('')
+    try {
+      await requestAddProjectPermission(createClient())
+      setDone(true)
+    } catch (e: any) {
+      setErr(e.message || 'Something went wrong')
+    } finally {
+      setRequesting(false)
+    }
+  }
+
+  if (done) {
+    return (
+      <span style={{
+        padding: '8px 14px', borderRadius: 8,
+        background: 'var(--color-success-bg, #0f2a1a)',
+        color: 'var(--color-success, #4ade80)',
+        fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap',
+      }}>
+        ✓ Request sent — admin will review
+      </span>
+    )
+  }
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <button
+        onClick={handleRequest}
+        disabled={requesting}
+        style={{
+          padding: '8px 14px', borderRadius: 8,
+          background: 'transparent',
+          color: 'var(--color-accent)',
+          border: '1px solid var(--color-accent)',
+          cursor: requesting ? 'default' : 'pointer',
+          fontSize: 13, fontWeight: 500,
+          display: 'flex', alignItems: 'center', gap: 6,
+          opacity: requesting ? 0.6 : 1,
+          transition: 'all 0.15s',
+        }}
+      >
+        {requesting ? 'Sending...' : (
+          <>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            Request Permission
+          </>
+        )}
+      </button>
+      {err && <span style={{ fontSize: 12, color: 'var(--color-error)' }}>{err}</span>}
+    </span>
   )
 }

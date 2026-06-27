@@ -201,6 +201,10 @@ export async function searchProjects(
     language?: string
     status?: string
     sort?: 'newest' | 'stars' | 'trending'
+  },
+  pagination?: {
+    offset?: number
+    limit?: number
   }
 ): Promise<any[]> {
   let dbQuery = client
@@ -215,13 +219,6 @@ export async function searchProjects(
     )
   }
 
-  // Category filter
-  if (filters?.category) {
-    dbQuery = dbQuery.contains('project_categories', [
-      { categories: { slug: filters.category } },
-    ])
-  }
-
   // Language filter
   if (filters?.language) {
     dbQuery = dbQuery.eq('repo_language', filters.language)
@@ -234,7 +231,9 @@ export async function searchProjects(
     dbQuery = dbQuery.order('created_at', { ascending: false })
   }
 
-  dbQuery = dbQuery.limit(50)
+  const off = pagination?.offset ?? 0
+  const lim = pagination?.limit ?? 20
+  dbQuery = dbQuery.range(off, off + lim - 1)
 
   const { data, error } = await dbQuery
 
@@ -246,6 +245,34 @@ export async function searchProjects(
     bookmark_count: p.bookmarks?.[0]?.count ?? 0,
     comment_count: p.comments?.[0]?.count ?? 0,
   }))
+}
+
+export async function countProjects(
+  client: TypedSupabaseClient,
+  query: string,
+  filters?: {
+    language?: string
+    status?: string
+  }
+): Promise<number> {
+  let dbQuery = client
+    .from('projects')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', filters?.status || 'active')
+
+  if (query) {
+    dbQuery = dbQuery.or(
+      `name.ilike.%${query}%,repo_description.ilike.%${query}%,owner.ilike.%${query}%,repo_name.ilike.%${query}%`
+    )
+  }
+
+  if (filters?.language) {
+    dbQuery = dbQuery.eq('repo_language', filters.language)
+  }
+
+  const { count, error } = await dbQuery
+  if (error) throw new Error(error.message)
+  return count ?? 0
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
