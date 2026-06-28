@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS public.webhook_deliveries (
 CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_webhook ON public.webhook_deliveries(webhook_id);
 CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_created ON public.webhook_deliveries(created_at DESC);
 
-── RLS Policies ───────────────────────────────────────────────────────
+-- ── RLS Policies ──────────────────────────────────────────────────────
 ALTER TABLE public.api_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.webhooks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.webhook_deliveries ENABLE ROW LEVEL SECURITY;
@@ -112,9 +112,11 @@ DECLARE
 BEGIN
   -- Build payload
   v_payload = jsonb_build_object(
-    'event', TG_OP = 'INSERT' AND TG_TABLE_NAME = 'likes' THEN 'project.liked'
-              WHEN TG_OP = 'INSERT' AND TG_TABLE_NAME = 'comments' THEN 'project.commented'
-              ELSE 'project.updated',
+    'event', CASE
+      WHEN TG_OP = 'INSERT' AND TG_TABLE_NAME = 'likes' THEN 'project.liked'
+      WHEN TG_OP = 'INSERT' AND TG_TABLE_NAME = 'comments' THEN 'project.commented'
+      ELSE 'project.updated'
+    END,
     'timestamp', now(),
     'project_id', COALESCE(NEW.project_id, OLD.project_id),
     'user_id', NEW.user_id
