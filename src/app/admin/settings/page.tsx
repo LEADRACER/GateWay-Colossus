@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Save, Globe, Shield, Bell, Palette } from 'lucide-react'
+import { Save, Globe, Shield, Bell } from 'lucide-react'
 
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false)

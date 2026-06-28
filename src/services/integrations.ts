@@ -144,7 +144,7 @@ export interface WebhookDelivery {
   id: string
   webhook_id: string
   event: string
-  payload: any
+  payload: unknown
   status_code?: number
   response_body?: string
   duration_ms?: number
@@ -177,7 +177,7 @@ export async function getWebhookDeliveries(
 export async function deliverWebhook(
   webhook: Webhook,
   event: string,
-  payload: any
+  payload: unknown
 ): Promise<{ success: boolean; statusCode?: number; responseBody?: string; durationMs?: number }> {
   const start = Date.now()
   try {

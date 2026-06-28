@@ -1,5 +1,5 @@
 import type { TypedSupabaseClient } from '@/lib/supabase/client'
-import type { Category, FeaturedProject } from '@/lib/types/database'
+import type { Category, FeaturedProject, Project } from '@/lib/types/database'
 
 // ── Categories ────────────────────────────────────────────────────────
 
@@ -49,7 +49,7 @@ export async function setProjectCategories(
   if (!categories || categories.length === 0) return
 
   // Insert new categories
-  const inserts = categories.map((c: any) => ({
+  const inserts = categories.map((c: { id: string }) => ({
     project_id: projectId,
     category_id: c.id,
   }))
@@ -71,13 +71,13 @@ export async function getProjectCategories(
     .eq('project_id', projectId)
 
   if (error) throw new Error(error.message)
-  return (data || []).map((d: any) => d.categories) as Category[]
+  return ((data || []).flatMap((d) => d.categories ?? []) ?? []) as unknown as Category[]
 }
 
 export async function getProjectsByCategory(
   client: TypedSupabaseClient,
   categorySlug: string
-): Promise<any[]> {
+): Promise<Project[]> {
   const { data, error } = await client
     .from('project_categories')
     .select('projects(*, likes:likes(count), bookmarks:bookmarks(count), comments:comments(count))')
@@ -85,8 +85,9 @@ export async function getProjectsByCategory(
 
   if (error) throw new Error(error.message)
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []).map((d: any) => ({
-    ...d.projects,
+    ...(Array.isArray(d.projects) ? d.projects[0] : d.projects),
     like_count: d.projects.likes?.[0]?.count ?? 0,
     bookmark_count: d.projects.bookmarks?.[0]?.count ?? 0,
     comment_count: d.projects.comments?.[0]?.count ?? 0,
@@ -98,13 +99,13 @@ export async function getProjectsByCategory(
 export async function getTrendingProjects(
   client: TypedSupabaseClient,
   limit = 10
-): Promise<any[]> {
+): Promise<(Project & { trend_score?: number })[]> {
   const { data, error } = await client.rpc('get_trending_projects', {
     limit_count: limit,
   })
 
   if (error) throw new Error(error.message)
-  return (data || []).map((d: any) => ({
+  return (data || []).map((d: { project_data: Project; trend_score?: number }) => ({
     ...d.project_data,
     trend_score: d.trend_score,
     like_count: 0,
@@ -117,11 +118,11 @@ export async function getTrendingProjects(
 
 export async function getFeaturedProjects(
   client: TypedSupabaseClient
-): Promise<any[]> {
+): Promise<(Project & { featured_note?: string })[]> {
   const { data, error } = await client.rpc('get_featured_projects')
 
   if (error) throw new Error(error.message)
-  return (data || []).map((d: any) => ({
+  return (data || []).map((d: { project_data: Project; note?: string }) => ({
     ...d.project_data,
     featured_note: d.note,
     like_count: 0,
@@ -206,7 +207,7 @@ export async function searchProjects(
     offset?: number
     limit?: number
   }
-): Promise<any[]> {
+): Promise<Project[]> {
   let dbQuery = client
     .from('projects')
     .select('*, likes:likes(count), bookmarks:bookmarks(count), comments:comments(count)')
@@ -239,7 +240,7 @@ export async function searchProjects(
 
   if (error) throw new Error(error.message)
 
-  return (data || []).map((p: any) => ({
+  return (data || []).map((p: Project & { likes?: { count: number }[]; bookmarks?: { count: number }[]; comments?: { count: number }[] }) => ({
     ...p,
     like_count: p.likes?.[0]?.count ?? 0,
     bookmark_count: p.bookmarks?.[0]?.count ?? 0,
@@ -285,5 +286,5 @@ export async function getDistinctLanguages(client: TypedSupabaseClient): Promise
     .order('repo_language', { ascending: true })
 
   if (error) throw new Error(error.message)
-  return (data || []).map((d: any) => d.repo_language).filter(Boolean)
+  return (data || []).map((d: { repo_language: string }) => d.repo_language).filter(Boolean)
 }

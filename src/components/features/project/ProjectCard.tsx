@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import type { Project } from '@/lib/types/database'
 import { Badge } from '@/components/ui/Badge'
 import { ProjectPreview } from '@/components/ui/ProjectPreview'
@@ -34,9 +35,11 @@ export function ProjectCard({ project }: Props) {
           <Link href={`/projects/${project.id}`}>
             <div className="flex items-center gap-3.5 mb-3.5">
               {project.repo_avatar ? (
-                <img
+                <Image
                   src={project.repo_avatar}
                   alt={project.owner}
+                  width={36}
+                  height={36}
                   className="w-9 h-9 rounded-full shrink-0 ring-1 ring-border"
                 />
               ) : (

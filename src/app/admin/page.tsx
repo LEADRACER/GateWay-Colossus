@@ -42,7 +42,7 @@ export default function AdminDashboardPage() {
       {/* Stats grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
         {statCards.map((card) => {
-          const val = stats ? (stats as any)[card.key] : 0
+          const val = stats ? stats[card.key as keyof AdminStats] : 0
           return (
             <div key={card.key} style={{
               background: 'var(--color-surface)',

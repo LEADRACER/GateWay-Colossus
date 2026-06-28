@@ -66,7 +66,7 @@ export function LoginForm() {
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-text-dim">Don't have an account? <a href="/auth/register" className="text-accent hover:underline">Register</a></p>
+        <p className="text-sm text-text-dim">Don&apos;t have an account? <a href="/auth/register" className="text-accent hover:underline">Register</a></p>
         <a href="/auth/forgot-password" className="text-sm text-accent hover:underline">Forgot password?</a>
       </div>
 

@@ -32,8 +32,8 @@ export default function EditProjectPage() {
         }
         setProject(p)
         setUrl(p.github_url)
-      } catch (e: any) {
-        setError(e.message)
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'Failed to load project')
       } finally {
         setLoading(false)
       }
@@ -71,8 +71,8 @@ export default function EditProjectPage() {
         repo_avatar: repo.owner.avatar_url,
       })
       router.push(`/projects/${id}`)
-    } catch (e: any) {
-      setError(e.message || 'Failed to update')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to update')
     } finally {
       setSaving(false)
     }

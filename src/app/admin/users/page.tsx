@@ -5,18 +5,12 @@ import { createClient } from '@/lib/supabase/client'
 import { getAllUsers, updateUserRole } from '@/services/admin'
 import type { AdminUser } from '@/services/admin'
 import { Spinner } from '@/components/ui/Spinner'
-import { Search, Shield, User, Crown } from 'lucide-react'
+import { Search } from 'lucide-react'
 
 const roleColors: Record<string, { bg: string; text: string }> = {
   admin: { bg: 'var(--color-accent-bg)', text: 'var(--color-accent)' },
   member: { bg: 'var(--color-info-bg)', text: 'var(--color-info)' },
   viewer: { bg: 'var(--color-surface-2)', text: 'var(--color-text-dim)' },
-}
-
-const roleIcons: Record<string, typeof Shield> = {
-  admin: Crown,
-  member: User,
-  viewer: User,
 }
 
 export default function UsersPage() {
@@ -38,6 +32,7 @@ export default function UsersPage() {
     }
   }, [])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function handleRoleChange(userId: string, newRole: 'admin' | 'member' | 'viewer') {
@@ -152,7 +147,7 @@ export default function UsersPage() {
                   <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                     <select
                       value={user.role}
-                      onChange={e => handleRoleChange(user.id, e.target.value as any)}
+                      onChange={e => handleRoleChange(user.id, e.target.value as 'admin' | 'member' | 'viewer')}
                       disabled={updating === user.id}
                       style={{
                         padding: '5px 10px', borderRadius: 6,

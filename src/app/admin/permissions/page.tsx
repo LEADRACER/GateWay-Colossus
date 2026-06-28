@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getMemberPermissions, toggleCanAddProject, getPermissionRequests, handlePermissionRequest } from '@/services/admin'
 import type { MemberPermission, PermissionRequest } from '@/services/admin'
 import { Spinner } from '@/components/ui/Spinner'
-import { Search, Shield, User, Crown, Check, X } from 'lucide-react'
+import { Search, Check, X } from 'lucide-react'
 
 export default function PermissionsPage() {
   const [members, setMembers] = useState<MemberPermission[]>([])
@@ -31,6 +31,7 @@ export default function PermissionsPage() {
     }
   }, [])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function handleToggle(userId: string, current: boolean) {

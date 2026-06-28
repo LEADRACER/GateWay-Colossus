@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { getTrendingProjects } from '@/services/discovery'
+import type { Project } from '@/lib/types/database'
 import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Badge } from '@/components/ui/Badge'
 import { TrendingUp } from 'lucide-react'
 
 export default function TrendingPage() {
-  const [projects, setProjects] = useState<any[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -70,7 +72,7 @@ export default function TrendingPage() {
 
                 {/* Avatar */}
                 {project.repo_avatar ? (
-                  <img src={project.repo_avatar} alt={project.owner}
+                  <Image src={project.repo_avatar} alt={project.owner} width={36} height={36}
                     className="w-9 h-9 rounded-full shrink-0 ring-1 ring-border" />
                 ) : (
                   <div className="w-9 h-9 rounded-full shrink-0 bg-surface-alt ring-1 ring-border flex items-center justify-center">

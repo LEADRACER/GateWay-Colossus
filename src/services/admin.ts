@@ -39,8 +39,8 @@ export async function getAdminStats(client: TypedSupabaseClient): Promise<AdminS
   ])
 
   const projectData = projects.data || []
-  const activeCount = projectData.filter((p: any) => p.status === 'active').length
-  const pendingCount = projectData.filter((p: any) => p.status === 'in development').length
+  const activeCount = projectData.filter((p: { status: string }) => p.status === 'active').length
+  const pendingCount = projectData.filter((p: { status: string }) => p.status === 'in development').length
 
   return {
     totalProjects: projects.count ?? projectData.length,
@@ -103,7 +103,7 @@ export async function getAllUsers(client: TypedSupabaseClient): Promise<AdminUse
 
   if (error) throw new Error(error.message)
 
-  return (data || []).map((u: any) => ({
+  return (data || []).map((u: Profile & { projects?: { count: number }[] }) => ({
     id: u.id,
     username: u.username,
     role: u.role,
@@ -155,14 +155,14 @@ export async function getMemberPermissions(client: TypedSupabaseClient): Promise
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(error.message)
-  return (data || []).map((u: any) => ({
+  return (data || []).map((u) => ({
     id: u.id,
     username: u.username,
     role: u.role,
     can_add_projects: u.can_add_projects ?? false,
     project_count: u.projects?.[0]?.count ?? 0,
     created_at: u.created_at,
-  }))
+  })) as MemberPermission[]
 }
 
 export async function toggleCanAddProject(
@@ -196,7 +196,7 @@ export async function getPermissionRequests(client: TypedSupabaseClient): Promis
     .limit(50)
 
   if (error) throw new Error(error.message)
-  return (data || []).map((r: any) => ({
+  return (data || []).map((r: PermissionRequest & { profiles?: { username: string } }) => ({
     id: r.id,
     user_id: r.user_id,
     username: r.profiles?.username,

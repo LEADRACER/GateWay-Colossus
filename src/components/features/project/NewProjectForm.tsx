@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { createProject } from '@/services/projects'
 import { parseGitHubUrl, fetchRepoInfo, fetchReadme } from '@/services/github'
@@ -62,8 +63,8 @@ export function NewProjectForm() {
         repo: repo.name,
         avatar: repo.owner.avatar_url,
       })
-    } catch (e: any) {
-      setError(e.message || 'Failed to fetch repo info')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to fetch repo info')
     } finally {
       setLoading(false)
     }
@@ -91,8 +92,8 @@ export function NewProjectForm() {
       })
       router.push('/projects')
       router.refresh()
-    } catch (e: any) {
-      setError(e.message || 'Failed to save project')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to save project')
     } finally {
       setSaving(false)
     }
@@ -118,9 +119,11 @@ export function NewProjectForm() {
       {preview && (
         <Card className="p-5 space-y-4">
           <div className="flex items-start gap-3.5">
-            <img
+            <Image
               src={preview.avatar}
               alt={preview.owner}
+              width={40}
+              height={40}
               className="w-10 h-10 rounded-full shrink-0 ring-1 ring-border"
             />
             <div className="flex-1 min-w-0">

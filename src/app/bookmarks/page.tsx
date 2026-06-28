@@ -8,9 +8,10 @@ import { ProjectCard } from '@/components/features/project/ProjectCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
 import { Bookmark } from 'lucide-react'
+import type { Project } from '@/lib/types/database'
 
 export default function BookmarksPage() {
-  const [projects, setProjects] = useState<any[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,6 +29,7 @@ export default function BookmarksPage() {
     }
   }, [])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   return (
@@ -42,7 +44,7 @@ export default function BookmarksPage() {
             Bookmarks
           </h1>
           <p className="text-sm text-text-muted mt-0.5">
-            Projects you've bookmarked for later
+            Projects you&apos;ve bookmarked for later
           </p>
         </div>
       </div>

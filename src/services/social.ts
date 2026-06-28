@@ -1,5 +1,5 @@
 import type { TypedSupabaseClient } from '@/lib/supabase/client'
-import type { Like, Bookmark, Comment, Activity } from '@/lib/types/database'
+import type { Like, Bookmark, Comment, Activity, Project } from '@/lib/types/database'
 
 // ── Likes ──────────────────────────────────────────────────────────────
 
@@ -110,7 +110,7 @@ export async function getUserBookmarks(client: TypedSupabaseClient, userId: stri
   return data.map((b) => b.project_id)
 }
 
-export async function getUserBookmarkedProjects(client: TypedSupabaseClient): Promise<any[]> {
+export async function getUserBookmarkedProjects(client: TypedSupabaseClient): Promise<Project[]> {
   const { data: { user } } = await client.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
@@ -121,7 +121,7 @@ export async function getUserBookmarkedProjects(client: TypedSupabaseClient): Pr
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(error.message)
-  return (data || []).map((b: any) => ({
+  return (data || []).map((b: Bookmark & { projects: Project & { likes?: { count: number }[]; bookmarks?: { count: number }[]; comments?: { count: number }[] } }) => ({
     ...b.projects,
     like_count: b.projects.likes?.[0]?.count ?? 0,
     bookmark_count: b.projects.bookmarks?.[0]?.count ?? 0,

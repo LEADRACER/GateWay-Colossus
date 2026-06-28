@@ -7,8 +7,6 @@ import type { Category } from '@/lib/types/database'
 import { Spinner } from '@/components/ui/Spinner'
 import { Plus, Edit2, Trash2, FolderOpen } from 'lucide-react'
 
-const iconOptions = ['globe', 'terminal', 'smartphone', 'book-open', 'server', 'brain', 'gamepad-2', 'shield', 'database', 'cpu']
-
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,6 +24,7 @@ export default function CategoriesPage() {
     }
   }, [])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   if (loading) {

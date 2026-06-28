@@ -7,8 +7,6 @@ import { searchProjects, getDistinctLanguages, countProjects } from '@/services/
 import { requestAddProjectPermission } from '@/services/admin'
 import { ProjectCard } from '@/components/features/project/ProjectCard'
 import { CategoryNav } from '@/components/ui/CategoryNav'
-import { Input } from '@/components/ui/Input'
-import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
@@ -29,7 +27,6 @@ export default function ProjectsPage() {
   const [languageFilter, setLanguageFilter] = useState<string>('')
   const [languages, setLanguages] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
-  const [user, setUser] = useState<{ id: string } | null>(null)
   const [canAdd, setCanAdd] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(null)
   const [page, setPage] = useState(1)
@@ -67,13 +64,14 @@ export default function ProjectsPage() {
       ])
       setProjects(data as Project[])
       setTotal(count)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'An error occurred')
     } finally {
       setLoading(false)
     }
-  }, [debouncedSearch, categoryFilter, statusFilter, languageFilter, page])
+  }, [debouncedSearch, statusFilter, languageFilter, page])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
@@ -84,7 +82,6 @@ export default function ProjectsPage() {
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data }) => {
-      setUser(data.user)
       if (data.user) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -378,8 +375,8 @@ function RequestPermissionButton() {
     try {
       await requestAddProjectPermission(createClient())
       setDone(true)
-    } catch (e: any) {
-      setErr(e.message || 'Something went wrong')
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
       setRequesting(false)
     }

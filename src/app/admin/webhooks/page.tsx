@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { listWebhooks, createWebhook, deleteWebhook, getWebhookDeliveries } from '@/services/integrations'
 import type { Webhook, WebhookDelivery } from '@/services/integrations'
 import { Spinner } from '@/components/ui/Spinner'
-import { Webhook as WebhookIcon, Plus, Trash2, Check, AlertTriangle, RefreshCw, ChevronDown, ChevronUp, XCircle, Clock } from 'lucide-react'
+import { Webhook as WebhookIcon, Plus, Trash2, AlertTriangle, RefreshCw, ChevronDown, ChevronUp, Clock } from 'lucide-react'
 
 const eventOptions = [
   'project.liked',
@@ -40,6 +40,7 @@ export default function WebhooksPage() {
     }
   }, [])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function loadDeliveries(webhookId: string) {

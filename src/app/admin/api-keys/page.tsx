@@ -27,6 +27,7 @@ export default function APIKeysPage() {
     }
   }, [])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function handleCreate() {
@@ -103,7 +104,7 @@ export default function APIKeysPage() {
             </button>
           </div>
           <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>
-            Copy this key now — it won't be shown again.
+            Copy this key now — it won&apos;t be shown again.
           </p>
           <button onClick={() => setCreatedKey(null)} style={{
             marginTop: 8, padding: '6px 12px', borderRadius: 6,

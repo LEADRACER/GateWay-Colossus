@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { ProjectCard } from '@/components/features/project/ProjectCard'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
@@ -53,7 +54,7 @@ export default function ProfilePage() {
         .eq('created_by', id)
         .order('created_at', { ascending: false })
 
-      setProjects((projs || []).map((p: any) => ({
+      setProjects((projs || []).map((p: Project & { likes?: { count: number }[]; bookmarks?: { count: number }[]; comments?: { count: number }[] }) => ({
         ...p,
         like_count: p.likes?.[0]?.count ?? 0,
         bookmark_count: p.bookmarks?.[0]?.count ?? 0,
@@ -75,6 +76,7 @@ export default function ProfilePage() {
     }
   }, [id])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   if (loading) {
@@ -105,7 +107,7 @@ export default function ProfilePage() {
       <div className="mb-10">
         <div className="flex items-center gap-4">
           {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt={profile.username}
+            <Image src={profile.avatar_url} alt={profile.username} width={56} height={56}
               className="w-14 h-14 rounded-full ring-2 ring-border" />
           ) : (
             <div className="w-14 h-14 rounded-full bg-surface-alt ring-2 ring-border flex items-center justify-center">

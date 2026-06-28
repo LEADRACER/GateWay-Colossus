@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
+import Link from 'next/link'
 
 export function Header() {
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
@@ -26,20 +27,20 @@ export function Header() {
   return (
     <header className="border-b border-border bg-bg/80 backdrop-blur-md sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-        <a
+        <Link
           href="/"
           className="text-base font-semibold tracking-tight text-text"
         >
           GateWay:<span className="text-accent">Colossus</span>
-        </a>
+        </Link>
 
         <nav className="flex items-center gap-1 text-sm">
-          <a
+          <Link
             href="/projects"
             className="px-3 py-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-alt transition-colors"
           >
             Projects
-          </a>
+          </Link>
 
           {loading ? (
             <div className="h-4 w-4 rounded-full border border-border border-t-accent animate-spin ml-2" />

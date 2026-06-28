@@ -3,12 +3,15 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { RippleButton } from '@/components/ui/RippleButton'
 import { StatsSection } from '@/components/features/StatsSection'
 import { getFeaturedProjects, getTrendingProjects } from '@/services/discovery'
-import { Spinner } from '@/components/ui/Spinner'
 import { Flame, Star } from 'lucide-react'
+import type { Project } from '@/lib/types/database'
+
+type FeaturedProject = Project & { featured_note?: string }
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -24,8 +27,8 @@ const fadeUp = {
 } as const
 
 export default function HomePage() {
-  const [featured, setFeatured] = useState<any[]>([])
-  const [trending, setTrending] = useState<any[]>([])
+  const [featured, setFeatured] = useState<FeaturedProject[]>([])
+  const [trending, setTrending] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -132,7 +135,7 @@ export default function HomePage() {
                   <div className="rounded-xl border border-border bg-surface p-5 hover:border-accent/20 transition-colors h-full">
                     <div className="flex items-center gap-3 mb-3">
                       {project.repo_avatar ? (
-                        <img src={project.repo_avatar} alt={project.owner}
+                        <Image src={project.repo_avatar} alt={project.owner} width={32} height={32}
                           className="w-8 h-8 rounded-full ring-1 ring-border" />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-surface-alt ring-1 ring-border flex items-center justify-center">
@@ -194,7 +197,7 @@ export default function HomePage() {
                       {index + 1}
                     </span>
                     {project.repo_avatar ? (
-                      <img src={project.repo_avatar} alt={project.owner}
+                      <Image src={project.repo_avatar} alt={project.owner} width={28} height={28}
                         className="w-7 h-7 rounded-full ring-1 ring-border shrink-0" />
                     ) : (
                       <div className="w-7 h-7 rounded-full bg-surface-alt ring-1 ring-border shrink-0" />

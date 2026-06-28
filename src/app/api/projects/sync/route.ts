@@ -106,15 +106,16 @@ export async function POST(request: NextRequest) {
         cached_at: new Date().toISOString(),
       },
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'An error occurred'
     // Log failed sync
     await supabase.from('sync_jobs').insert({
       user_id: user.id,
       sync_type: 'github_sync',
       status: 'failed',
-      metadata: { project_id, error: err.message },
+      metadata: { project_id, error: errorMessage },
     })
 
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }

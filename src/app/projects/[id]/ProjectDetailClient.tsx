@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { getProject, deleteProject, updateProject } from '@/services/projects'
 import { buildDownloadUrl, buildVisitUrl, fetchRepoInfo, fetchReadme } from '@/services/github'
@@ -50,16 +51,26 @@ export function ProjectDetailClient({ id }: Props) {
           setLiveReadmeLoading(false)
         }
       }
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'An error occurred')
     } finally {
       setLoading(false)
     }
   }, [id])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   const isOwner = userId && project?.created_by === userId
+
+  // eslint-disable-next-line react-hooks/purity
+  const mountTime = useRef(Date.now())
+  const cachedAt = project?.cached_at
+
+  const cacheAge = useMemo(() => {
+    if (!cachedAt) return null
+    return Math.round((mountTime.current - new Date(cachedAt).getTime()) / 60000) // eslint-disable-line
+  }, [cachedAt])
 
   async function handleRefresh() {
     if (!project) return
@@ -80,8 +91,8 @@ export function ProjectDetailClient({ id }: Props) {
       })
       setProject(updated)
       setLiveReadme(null)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'An error occurred')
     } finally {
       setRefreshing(false)
     }
@@ -93,8 +104,8 @@ export function ProjectDetailClient({ id }: Props) {
       const supabase = createClient()
       await deleteProject(supabase, id)
       router.push('/projects')
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'An error occurred')
       setDeleting(false)
     }
   }
@@ -102,17 +113,13 @@ export function ProjectDetailClient({ id }: Props) {
   async function handleStatusChange(status: Project['status']) {
     if (!project) return
     const supabase = createClient()
-    const updated = await updateProject(supabase, id, { status } as any)
+    const updated = await updateProject(supabase, id, { status })
     setProject(updated)
   }
 
   if (loading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>
   if (error) return <p className="text-error text-center py-24 text-sm">{error}</p>
   if (!project) return <p className="text-text-muted text-center py-24 text-sm">Project not found</p>
-
-  const cacheAge = project.cached_at
-    ? Math.round((Date.now() - new Date(project.cached_at).getTime()) / 60000)
-    : null
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-12 md:py-16">
@@ -143,9 +150,11 @@ export function ProjectDetailClient({ id }: Props) {
         <div className="p-6 md:p-8">
           <div className="flex items-start gap-4 mb-6">
             {project.repo_avatar ? (
-              <img
+              <Image
                 src={project.repo_avatar}
                 alt={project.owner}
+                width={44}
+                height={44}
                 className="w-11 h-11 rounded-full shrink-0 ring-1 ring-border"
               />
             ) : (

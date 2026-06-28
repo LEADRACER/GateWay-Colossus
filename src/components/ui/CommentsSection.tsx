@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { addComment, getComments, deleteComment, getCommentCount } from '@/services/social'
 import type { Comment } from '@/lib/types/database'
@@ -24,6 +25,7 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
     loadComments()
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
   async function loadComments() {
@@ -43,8 +45,8 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
         })
       )
       setComments(enriched)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to load comments')
     } finally {
       setLoading(false)
     }
@@ -62,8 +64,8 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
       await loadComments()
       const count = await getCommentCount(supabase, projectId)
       onCountChange?.(count)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to post comment')
     } finally {
       setSubmitting(false)
     }
@@ -76,8 +78,8 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
       await loadComments()
       const count = await getCommentCount(supabase, projectId)
       onCountChange?.(count)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to delete comment')
     }
   }
 
@@ -135,7 +137,7 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
             <div key={comment.id} className="flex gap-3 group">
               <div className="w-8 h-8 rounded-full bg-surface-alt flex items-center justify-center shrink-0 overflow-hidden">
                 {comment.avatar_url ? (
-                  <img src={comment.avatar_url} alt="" className="w-full h-full object-cover" />
+                  <Image src={comment.avatar_url} alt="" width={32} height={32} className="w-full h-full object-cover" />
                 ) : (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-dim">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />

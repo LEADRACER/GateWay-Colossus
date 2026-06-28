@@ -2,18 +2,18 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { moderateProject } from '@/services/admin'
 import type { Project } from '@/lib/types/database'
 import { Spinner } from '@/components/ui/Spinner'
-import { CheckCircle, XCircle, ExternalLink, RefreshCw } from 'lucide-react'
+import { CheckCircle, XCircle, RefreshCw } from 'lucide-react'
 
 export default function ModerationPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [syncing, setSyncing] = useState<string | null>(null)
-  const [syncMsg, setSyncMsg] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -33,6 +33,7 @@ export default function ModerationPage() {
     }
   }, [])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function handleModerate(projectId: string, action: 'approve' | 'reject') {
@@ -50,7 +51,6 @@ export default function ModerationPage() {
 
   async function handleSync(projectId: string) {
     setSyncing(projectId)
-    setSyncMsg(null)
     try {
       const res = await fetch('/api/projects/sync', {
         method: 'POST',
@@ -58,10 +58,9 @@ export default function ModerationPage() {
         body: JSON.stringify({ project_id: projectId }),
       })
       const data = await res.json()
-      setSyncMsg(data.success ? `✓ Synced — ${data.data.repo_stars} stars` : `✗ ${data.error}`)
       if (data.success) await load()
     } catch {
-      setSyncMsg('✗ Sync failed')
+      // sync failed silently
     } finally {
       setSyncing(null)
     }
@@ -112,8 +111,8 @@ export default function ModerationPage() {
             }}>
               {/* Avatar */}
               {project.repo_avatar ? (
-                <img src={project.repo_avatar} alt={project.owner}
-                  style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, border: '1px solid var(--color-border)' }} />
+                <Image src={project.repo_avatar} alt={project.owner} width={40} height={40}
+                  style={{ borderRadius: '50%', flexShrink: 0, border: '1px solid var(--color-border)' }} />
               ) : (
                 <div style={{
                   width: 40, height: 40, borderRadius: '50%',

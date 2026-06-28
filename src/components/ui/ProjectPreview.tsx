@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Project } from '@/lib/types/database'
-import { Badge } from '@/components/ui/Badge'
 
 interface ProjectPreviewProps {
   project: Project

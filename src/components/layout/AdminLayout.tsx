@@ -1,10 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { isAdmin } from '@/services/admin'
+import { usePathname } from 'next/navigation'
 import type { Profile } from '@/lib/types/database'
 
 const adminNav = [
@@ -25,7 +22,6 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children, profile }: AdminLayoutProps) {
   const pathname = usePathname()
-  const router = useRouter()
 
   return (
     <div className="flex min-h-screen">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, type ReactNode } from 'react'
+import { useState, useRef, type ReactNode } from 'react'
 import { motion, useMotionValue, useSpring } from 'framer-motion'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'

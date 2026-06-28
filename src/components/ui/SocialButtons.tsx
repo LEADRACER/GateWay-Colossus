@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { likeProject, unlikeProject, getLikeCount } from '@/services/social'
+import { likeProject, unlikeProject } from '@/services/social'
 import type { Project } from '@/lib/types/database'
 
 interface LikeButtonProps {
@@ -19,7 +19,6 @@ export function LikeButton({ project, onCountChange, size = 'md' }: LikeButtonPr
   const iconSize = size === 'sm' ? 14 : 16
 
   useEffect(() => {
-    setCount(project.like_count ?? 0)
     // Check if current user has liked
     const checkLike = async () => {
       const supabase = createClient()
@@ -51,7 +50,7 @@ export function LikeButton({ project, onCountChange, size = 'md' }: LikeButtonPr
         setCount(c => c + 1)
         onCountChange?.(count + 1)
       }
-    } catch (e: any) {
+    } catch {
       // silently fail
     } finally {
       setLoading(false)
@@ -100,7 +99,6 @@ export function BookmarkButton({ project, size = 'md' }: BookmarkButtonProps) {
   const iconSize = size === 'sm' ? 14 : 16
 
   useEffect(() => {
-    setCount(project.bookmark_count ?? 0)
     const check = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
@@ -130,7 +128,7 @@ export function BookmarkButton({ project, size = 'md' }: BookmarkButtonProps) {
         setBookmarked(true)
         setCount(c => c + 1)
       }
-    } catch (e: any) {
+    } catch {
       // silently fail
     } finally {
       setLoading(false)
