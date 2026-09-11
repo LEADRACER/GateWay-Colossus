@@ -8,7 +8,7 @@ export default function LoginPage() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace('/auth/totp-login')
+    router.replace('/auth/migrate')
   }, [router])
 
   return (

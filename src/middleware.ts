@@ -7,6 +7,7 @@ const PUBLIC_PATHS = [
   '/auth/register',
   '/auth/totp-login',
   '/auth/totp-setup',
+  '/auth/migrate',
   '/auth/forgot-password',
   '/auth/reset-password',
   '/auth/callback',
