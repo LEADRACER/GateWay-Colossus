@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { Spinner } from '@/components/ui/Spinner'
 import { generateTOTPSecret, verifyTOTP, type TOTPSetup } from '@/services/totp'
 
-export default function TOTPSetupPage() {
+function TOTPSetupForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [setup, setSetup] = useState<Pick<TOTPSetup, 'secret' | 'qrCodeDataUrl' | 'otpauthUrl'> | null>(null)
@@ -165,5 +165,13 @@ export default function TOTPSetupPage() {
         </p>
       </Card>
     </div>
+  )
+}
+
+export default function TOTPSetupPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[70vh]"><Spinner size="lg" /></div>}>
+      <TOTPSetupForm />
+    </Suspense>
   )
 }

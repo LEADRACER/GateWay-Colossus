@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Spinner } from '@/components/ui/Spinner'
 
-export default function MigrationLoginPage() {
+function MigrationForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
@@ -92,5 +92,13 @@ export default function MigrationLoginPage() {
         </p>
       </Card>
     </div>
+  )
+}
+
+export default function MigrationLoginPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[70vh]"><Spinner size="lg" /></div>}>
+      <MigrationForm />
+    </Suspense>
   )
 }

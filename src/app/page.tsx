@@ -29,9 +29,14 @@ const fadeUp = {
 export default function HomePage() {
   const [featured, setFeatured] = useState<FeaturedProject[]>([])
   const [trending, setTrending] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
     const supabase = createClient()
     Promise.all([
       getFeaturedProjects(supabase),
@@ -42,8 +47,7 @@ export default function HomePage() {
         setTrending(t)
       })
       .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+  }, [mounted])
 
   return (
     <div className="min-h-[90vh] flex flex-col">
@@ -58,20 +62,40 @@ export default function HomePage() {
               variants={stagger}
               className="order-2 md:order-1"
             >
-              <motion.div variants={fadeUp} className="inline-flex items-center gap-2 rounded-full border border-accent/15 bg-accent-subtle px-3 py-1 text-xs text-accent font-medium mb-6">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.1 }}
+                className="inline-flex items-center gap-2 rounded-full border border-accent/15 bg-accent-subtle px-3 py-1 text-xs text-accent font-medium mb-6"
+              >
                 <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
                 Community Project Showcase
               </motion.div>
 
-              <motion.h1 variants={fadeUp} className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter leading-none text-text">
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.2 }}
+                className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter leading-none text-text"
+              >
                 GateWay:<span className="text-accent">Colossus</span>
               </motion.h1>
 
-              <motion.p variants={fadeUp} className="mt-5 text-base sm:text-lg text-text-muted leading-relaxed max-w-[45ch]">
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 }}
+                className="mt-5 text-base sm:text-lg text-text-muted leading-relaxed max-w-[45ch]"
+              >
                 A living archive of community-built projects. Share your work, discover what others are building, and draw inspiration from the collective.
               </motion.p>
 
-              <motion.div variants={fadeUp} className="mt-8 flex flex-wrap gap-3">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.4 }}
+                className="mt-8 flex flex-wrap gap-3"
+              >
                 <Link href="/projects">
                   <RippleButton size="lg">
                     Browse Projects
@@ -81,7 +105,7 @@ export default function HomePage() {
                     </svg>
                   </RippleButton>
                 </Link>
-                <Link href="/auth/register">
+                <Link href="/auth/migrate">
                   <RippleButton variant="secondary" size="lg">
                     Showcase Your Work
                   </RippleButton>
@@ -117,13 +141,24 @@ export default function HomePage() {
           </div>
 
           {/* Stats bar */}
-          <StatsSection />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.5 }}
+          >
+            <StatsSection />
+          </motion.div>
         </div>
       </section>
 
       {/* Featured Projects */}
-      {!loading && featured.length > 0 && (
-        <section className="border-t border-border bg-surface-alt/30">
+      {featured.length > 0 && (
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.6 }}
+          className="border-t border-border bg-surface-alt/30"
+        >
           <div className="max-w-6xl mx-auto w-full px-6 py-16">
             <div className="flex items-center gap-2 mb-8">
               <Star size={18} className="text-warning" fill="currentColor" />
@@ -171,12 +206,17 @@ export default function HomePage() {
               ))}
             </div>
           </div>
-        </section>
+        </motion.section>
       )}
 
       {/* Trending Projects */}
-      {!loading && trending.length > 0 && (
-        <section className="border-t border-border">
+      {trending.length > 0 && (
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.7 }}
+          className="border-t border-border"
+        >
           <div className="max-w-6xl mx-auto w-full px-6 py-16">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-2">
@@ -222,7 +262,7 @@ export default function HomePage() {
               ))}
             </div>
           </div>
-        </section>
+        </motion.section>
       )}
     </div>
   )
