@@ -6,6 +6,8 @@ export interface Profile {
   bio?: string
   role: 'admin' | 'member' | 'viewer'
   can_add_projects?: boolean
+  totp_secret?: string
+  totp_enabled?: boolean
   created_at: string
   updated_at: string
 }
