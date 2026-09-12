@@ -2,7 +2,7 @@ import NextAuth from 'next-auth'
 import GitHub from 'next-auth/providers/github'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+export const authOptions = {
   providers: [
     GitHub({
       clientId: process.env.GITHUB_CLIENT_ID!,
@@ -15,7 +15,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, account, profile, trigger, session }) {
+    async jwt({ token, account, profile, trigger, session }: any) {
       if (account && profile) {
         token.accessToken = account.access_token
         token.githubId = (profile as unknown as { id: number }).id
@@ -23,14 +23,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.avatarUrl = (profile as unknown as { avatar_url: string }).avatar_url
       }
 
-      // Update token when session is updated (e.g., after fetching role)
       if (trigger === 'update' && session?.user?.role) {
         token.role = session.user.role
       }
 
       return token
     },
-    async session({ session, token }) {
+    async session({ session, token }: any) {
       session.accessToken = token.accessToken as string
       session.user.githubId = token.githubId as number
       session.user.githubLogin = token.githubLogin as string
@@ -45,12 +44,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: '/auth/signin',
   },
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt' as const,
     maxAge: 30 * 24 * 60 * 60,
   },
-})
+}
 
-// Server-side function to get user role from database
+export const { handlers, signIn, signOut, auth } = NextAuth(authOptions)
+
 export async function getUserRole(githubId: number): Promise<string | null> {
   const supabase = await createServerSupabaseClient()
   const { data: profile } = await supabase
@@ -73,5 +73,13 @@ declare module 'next-auth' {
       avatarUrl: string
       role?: string
     }
+  }
+  
+  interface JWT {
+    accessToken: string
+    githubId: number
+    githubLogin: string
+    avatarUrl: string
+    role?: string
   }
 }
