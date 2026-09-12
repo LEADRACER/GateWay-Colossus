@@ -27,6 +27,8 @@ export interface Project {
   created_by: string
   created_by_login?: string
   created_by_avatar?: string
+  team_id?: string
+  is_team_project: boolean
   cached_at?: string
   created_at: string
   updated_at: string
@@ -134,4 +136,80 @@ export interface Webhook {
   last_status?: number
   failure_count: number
   created_at: string
+}
+
+// ============================================================
+// TEAMING SYSTEM
+// ============================================================
+
+export type TeamRole = 'leader' | 'admin' | 'member'
+export type TeamMemberStatus = 'pending' | 'active' | 'rejected' | 'left'
+export type JoinRequestStatus = 'pending' | 'accepted' | 'rejected'
+export type ShowcaseType = 'homepage' | 'fired' | 'both'
+export type ShowcaseStatus = 'pending' | 'approved' | 'rejected'
+
+export interface Team {
+  id: string
+  name: string
+  slug: string
+  code: string
+  description?: string
+  avatar_url?: string
+  leader_id: string
+  is_locked: boolean
+  is_public: boolean
+  member_count: number
+  created_at: string
+  updated_at: string
+  // Joined fields
+  leader_login?: string
+  leader_avatar_url?: string
+}
+
+export interface TeamMember {
+  id: string
+  team_id: string
+  user_id: string
+  role: TeamRole
+  status: TeamMemberStatus
+  invited_by?: string
+  joined_at: string
+  // Joined fields
+  login?: string
+  avatar_url?: string
+  bio?: string
+}
+
+export interface TeamJoinRequest {
+  id: string
+  team_id: string
+  user_id: string
+  message?: string
+  status: JoinRequestStatus
+  reviewed_by?: string
+  reviewed_at?: string
+  created_at: string
+  // Joined fields
+  login?: string
+  avatar_url?: string
+  team_name?: string
+  team_code?: string
+}
+
+export interface ShowcaseRequest {
+  id: string
+  project_id: string
+  requested_by: string
+  type: ShowcaseType
+  status: ShowcaseStatus
+  admin_notes?: string
+  reviewed_by?: string
+  reviewed_at?: string
+  created_at: string
+  // Joined fields
+  project_name?: string
+  project_owner?: string
+  requester_login?: string
+  team_name?: string
+  team_code?: string
 }
