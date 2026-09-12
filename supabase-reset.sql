@@ -1,27 +1,23 @@
--- Supabase: Complete Data Reset
+-- Supabase: Delete All Data (Keep Tables & Structure)
 -- Run in Supabase Dashboard → SQL Editor
--- WARNING: This deletes ALL data. Run only if you're sure.
+-- This deletes all rows but keeps tables, indexes, constraints, RLS policies
 
--- Disable foreign key checks temporarily (PostgreSQL doesn't have this, so we truncate in correct order)
+-- Delete in correct order (children first, parents last)
+DELETE FROM activities;
+DELETE FROM comments;
+DELETE FROM likes;
+DELETE FROM bookmarks;
+DELETE FROM project_categories;
+DELETE FROM featured_projects;
+DELETE FROM permission_requests;
+DELETE FROM api_keys;
+DELETE FROM webhook_deliveries;
+DELETE FROM webhooks;
+DELETE FROM projects;
+DELETE FROM profiles;
+DELETE FROM categories;
 
--- Order matters: child tables first, then parent tables
-TRUNCATE TABLE 
-  activities,
-  comments,
-  likes,
-  bookmarks,
-  project_categories,
-  featured_projects,
-  permission_requests,
-  api_keys,
-  webhooks,
-  webhook_deliveries,
-  projects,
-  profiles,
-  categories
-RESTART IDENTITY CASCADE;
-
--- Verify tables are empty
+-- Verify empty
 SELECT 'profiles' as table_name, count(*) FROM profiles
 UNION ALL SELECT 'projects', count(*) FROM projects
 UNION ALL SELECT 'activities', count(*) FROM activities
