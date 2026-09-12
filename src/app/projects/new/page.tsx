@@ -2,32 +2,27 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useSession } from 'next-auth/react'
 import { NewProjectForm } from '@/components/features/project/NewProjectForm'
 import { Spinner } from '@/components/ui/Spinner'
 
 export default function NewProjectPage() {
   const router = useRouter()
-  const [checking, setChecking] = useState(true)
+  const { data: session, status } = useSession()
 
-  useEffect(() => {
-    async function check() {
-      const { data: { user } } = await createClient().auth.getUser()
-      if (!user) {
-        router.replace('/auth/login')
-      } else {
-        setChecking(false)
-      }
-    }
-    check()
-  }, [router])
-
-  if (checking) {
+  if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-[70vh]">
         <Spinner size="lg" />
       </div>
     )
+  }
+
+  if (!session?.user) {
+    useEffect(() => {
+      router.replace('/auth/signin?callbackUrl=/projects/new')
+    }, [router])
+    return null
   }
 
   return (

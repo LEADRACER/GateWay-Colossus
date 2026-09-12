@@ -3,8 +3,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
-import { getProject, deleteProject, updateProject } from '@/services/projects'
 import { buildDownloadUrl, buildVisitUrl, fetchRepoInfo, fetchReadme } from '@/services/github'
 import type { Project } from '@/lib/types/database'
 import { Badge } from '@/components/ui/Badge'
@@ -14,6 +12,7 @@ import { Modal } from '@/components/ui/Modal'
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer'
 import { LikeButton, BookmarkButton } from '@/components/ui/SocialButtons'
 import { CommentsSection } from '@/components/ui/CommentsSection'
+import { useSession } from 'next-auth/react'
 
 interface Props {
   id: string
@@ -21,8 +20,8 @@ interface Props {
 
 export function ProjectDetailClient({ id }: Props) {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [project, setProject] = useState<Project | null>(null)
-  const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
@@ -33,20 +32,19 @@ export function ProjectDetailClient({ id }: Props) {
 
   const load = useCallback(async () => {
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      setUserId(user?.id ?? null)
-      const p = await getProject(supabase, id)
+      const response = await fetch(`/api/projects/${id}`)
+      if (!response.ok) {
+        throw new Error('Project not found')
+      }
+      const p = await response.json()
       setProject(p)
 
-      // If no README stored, fetch live from GitHub
       if (!p.repo_readme && p.github_url) {
         setLiveReadmeLoading(true)
         try {
           const readme = await fetchReadme(p.github_url)
           if (readme) setLiveReadme(readme)
         } catch {
-          // README unavailable — show description instead
         } finally {
           setLiveReadmeLoading(false)
         }
@@ -58,18 +56,18 @@ export function ProjectDetailClient({ id }: Props) {
     }
   }, [id])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    if (status !== 'loading') load()
+  }, [load, status])
 
-  const isOwner = userId && project?.created_by === userId
+  const isOwner = session?.user?.githubId && String(session.user.githubId) === project?.created_by
 
-  // eslint-disable-next-line react-hooks/purity
   const mountTime = useRef(Date.now())
   const cachedAt = project?.cached_at
 
   const cacheAge = useMemo(() => {
     if (!cachedAt) return null
-    return Math.round((mountTime.current - new Date(cachedAt).getTime()) / 60000) // eslint-disable-line
+    return Math.round((mountTime.current - new Date(cachedAt).getTime()) / 60000)
   }, [cachedAt])
 
   async function handleRefresh() {
@@ -78,17 +76,28 @@ export function ProjectDetailClient({ id }: Props) {
     try {
       const repo = await fetchRepoInfo(project.github_url)
       const readme = await fetchReadme(project.github_url)
-      const supabase = createClient()
-      const updated = await updateProject(supabase, id, {
-        name: repo.name,
-        repo_description: repo.description || undefined,
-        repo_readme: readme || undefined,
-        repo_language: repo.language || undefined,
-        repo_topics: repo.topics,
-        repo_stars: repo.stargazers_count,
-        repo_license: repo.license?.spdx_id || undefined,
-        repo_avatar: repo.owner.avatar_url,
+
+      const response = await fetch(`/api/projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: repo.name,
+          repo_description: repo.description || undefined,
+          repo_readme: readme || undefined,
+          repo_language: repo.language || undefined,
+          repo_topics: repo.topics,
+          repo_stars: repo.stargazers_count,
+          repo_license: repo.license?.spdx_id || undefined,
+          repo_avatar: repo.owner.avatar_url,
+        }),
       })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to refresh')
+      }
+
+      const updated = await response.json()
       setProject(updated)
       setLiveReadme(null)
     } catch (e: unknown) {
@@ -101,8 +110,15 @@ export function ProjectDetailClient({ id }: Props) {
   async function handleDelete() {
     setDeleting(true)
     try {
-      const supabase = createClient()
-      await deleteProject(supabase, id)
+      const response = await fetch(`/api/projects/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to delete')
+      }
+
       router.push('/projects')
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'An error occurred')
@@ -112,18 +128,32 @@ export function ProjectDetailClient({ id }: Props) {
 
   async function handleStatusChange(status: Project['status']) {
     if (!project) return
-    const supabase = createClient()
-    const updated = await updateProject(supabase, id, { status })
-    setProject(updated)
+    try {
+      const response = await fetch(`/api/projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to update status')
+      }
+
+      const updated = await response.json()
+      setProject(updated)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'An error occurred')
+    }
   }
 
+  if (status === 'loading') return <div className="flex justify-center py-24"><Spinner size="lg" /></div>
   if (loading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>
   if (error) return <p className="text-error text-center py-24 text-sm">{error}</p>
   if (!project) return <p className="text-text-muted text-center py-24 text-sm">Project not found</p>
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-12 md:py-16">
-      {/* Back link */}
       <button
         onClick={() => router.push('/projects')}
         className="group inline-flex items-center gap-1.5 text-xs text-text-dim hover:text-text-muted transition-colors mb-8"
@@ -144,9 +174,7 @@ export function ProjectDetailClient({ id }: Props) {
         Back to Projects
       </button>
 
-      {/* Main card */}
       <div className="rounded-xl border border-border bg-surface">
-        {/* Header section */}
         <div className="p-6 md:p-8">
           <div className="flex items-start gap-4 mb-6">
             {project.repo_avatar ? (
@@ -187,7 +215,6 @@ export function ProjectDetailClient({ id }: Props) {
             </div>
           </div>
 
-          {/* Description or README */}
           {liveReadmeLoading ? (
             <div className="border-t border-border pt-5">
               <p className="text-xs text-text-dim animate-pulse">Loading README from GitHub…</p>
@@ -202,7 +229,6 @@ export function ProjectDetailClient({ id }: Props) {
             </p>
           ) : null}
 
-          {/* Metadata bar */}
           <div className="flex flex-wrap items-center gap-4 mt-6 pt-5 border-t border-border text-xs">
             <span className="flex items-center gap-1.5 text-text-dim">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-text-dim/50">
@@ -227,7 +253,6 @@ export function ProjectDetailClient({ id }: Props) {
             )}
           </div>
 
-          {/* Topics */}
           {project.repo_topics && project.repo_topics.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-border">
               {project.repo_topics.map((t) => (
@@ -241,7 +266,6 @@ export function ProjectDetailClient({ id }: Props) {
             </div>
           )}
 
-          {/* Action buttons */}
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
             <a href={buildVisitUrl(project.owner, project.repo_name)} target="_blank" rel="noopener noreferrer">
               <Button variant="primary">
@@ -278,19 +302,17 @@ export function ProjectDetailClient({ id }: Props) {
             </Button>
           </div>
 
-          {/* Created by */}
           <div className="mt-4 text-xs text-text-dim">
             Added by{' '}
             <a
               href={`/profile/${project.created_by}`}
               className="text-info hover:underline"
             >
-              {project.created_by.slice(0, 8)}
+              {project.created_by_login ?? project.created_by.slice(0, 8)}
             </a>
           </div>
         </div>
 
-        {/* Owner controls */}
         {isOwner && (
           <div className="border-t border-border px-6 md:px-8 py-4 flex flex-wrap gap-2 bg-surface-alt rounded-b-xl">
             <Button variant="secondary" size="sm" onClick={() => router.push(`/projects/${id}/edit`)}>
@@ -318,10 +340,8 @@ export function ProjectDetailClient({ id }: Props) {
         )}
       </div>
 
-      {/* Comments */}
       <CommentsSection projectId={id} />
 
-      {/* Delete modal */}
       <Modal open={showDelete} onClose={() => setShowDelete(false)} title="Delete project?">
         <p className="text-sm text-text-muted mb-6 leading-relaxed">
           This will permanently remove <span className="text-text font-medium">{project.name}</span>. This action cannot be undone.

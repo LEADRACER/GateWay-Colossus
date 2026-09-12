@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { likeProject, unlikeProject } from '@/services/social'
+import { useSession } from 'next-auth/react'
 import type { Project } from '@/lib/types/database'
 
 interface LikeButtonProps {
@@ -12,6 +11,7 @@ interface LikeButtonProps {
 }
 
 export function LikeButton({ project, onCountChange, size = 'md' }: LikeButtonProps) {
+  const { data: session } = useSession()
   const [liked, setLiked] = useState(false)
   const [count, setCount] = useState(project.like_count ?? 0)
   const [loading, setLoading] = useState(false)
@@ -19,33 +19,35 @@ export function LikeButton({ project, onCountChange, size = 'md' }: LikeButtonPr
   const iconSize = size === 'sm' ? 14 : 16
 
   useEffect(() => {
-    // Check if current user has liked
+    if (!session?.user?.githubId) return
     const checkLike = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data } = await supabase
-        .from('likes')
-        .select('id')
-        .eq('project_id', project.id)
-        .eq('user_id', user.id)
-        .single()
-      setLiked(!!data)
+      try {
+        const response = await fetch(`/api/projects/${project.id}/like/status`)
+        if (response.ok) {
+          const data = await response.json()
+          setLiked(data.liked)
+        }
+      } catch {
+        // silently fail
+      }
     }
     checkLike()
-  }, [project.id, project.like_count])
+  }, [project.id, session?.user?.githubId])
 
   async function handleToggle() {
+    if (!session?.user) return
     setLoading(true)
     try {
-      const supabase = createClient()
+      const response = await fetch(`/api/projects/${project.id}/like`, {
+        method: liked ? 'DELETE' : 'POST',
+      })
+      if (!response.ok) throw new Error('Failed')
+      
       if (liked) {
-        await unlikeProject(supabase, project.id)
         setLiked(false)
         setCount(c => c - 1)
         onCountChange?.(count - 1)
       } else {
-        await likeProject(supabase, project.id)
         setLiked(true)
         setCount(c => c + 1)
         onCountChange?.(count + 1)
@@ -60,14 +62,14 @@ export function LikeButton({ project, onCountChange, size = 'md' }: LikeButtonPr
   return (
     <button
       onClick={handleToggle}
-      disabled={loading}
+      disabled={loading || !session?.user}
       className={`inline-flex items-center gap-1.5 rounded-lg transition-all duration-150 ${
         size === 'sm' ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm'
       } ${
         liked
           ? 'bg-error/10 text-error'
           : 'bg-surface-alt text-text-dim hover:text-text-muted border border-transparent hover:border-border'
-      }`}
+      } ${!session?.user ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <svg
         width={iconSize}
@@ -92,6 +94,7 @@ interface BookmarkButtonProps {
 }
 
 export function BookmarkButton({ project, size = 'md' }: BookmarkButtonProps) {
+  const { data: session } = useSession()
   const [bookmarked, setBookmarked] = useState(false)
   const [count, setCount] = useState(project.bookmark_count ?? 0)
   const [loading, setLoading] = useState(false)
@@ -99,32 +102,34 @@ export function BookmarkButton({ project, size = 'md' }: BookmarkButtonProps) {
   const iconSize = size === 'sm' ? 14 : 16
 
   useEffect(() => {
+    if (!session?.user?.githubId) return
     const check = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data } = await supabase
-        .from('bookmarks')
-        .select('id')
-        .eq('project_id', project.id)
-        .eq('user_id', user.id)
-        .single()
-      setBookmarked(!!data)
+      try {
+        const response = await fetch(`/api/projects/${project.id}/bookmark/status`)
+        if (response.ok) {
+          const data = await response.json()
+          setBookmarked(data.bookmarked)
+        }
+      } catch {
+        // silently fail
+      }
     }
     check()
-  }, [project.id, project.bookmark_count])
+  }, [project.id, session?.user?.githubId])
 
   async function handleToggle() {
+    if (!session?.user) return
     setLoading(true)
     try {
-      const supabase = createClient()
-      const { bookmarkProject, unbookmarkProject } = await import('@/services/social')
+      const response = await fetch(`/api/projects/${project.id}/bookmark`, {
+        method: bookmarked ? 'DELETE' : 'POST',
+      })
+      if (!response.ok) throw new Error('Failed')
+      
       if (bookmarked) {
-        await unbookmarkProject(supabase, project.id)
         setBookmarked(false)
         setCount(c => Math.max(0, c - 1))
       } else {
-        await bookmarkProject(supabase, project.id)
         setBookmarked(true)
         setCount(c => c + 1)
       }
@@ -138,14 +143,14 @@ export function BookmarkButton({ project, size = 'md' }: BookmarkButtonProps) {
   return (
     <button
       onClick={handleToggle}
-      disabled={loading}
+      disabled={loading || !session?.user}
       className={`inline-flex items-center gap-1.5 rounded-lg transition-all duration-150 ${
         size === 'sm' ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm'
       } ${
         bookmarked
           ? 'bg-warning/10 text-warning'
           : 'bg-surface-alt text-text-dim hover:text-text-muted border border-transparent hover:border-border'
-      }`}
+      } ${!session?.user ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <svg
         width={iconSize}

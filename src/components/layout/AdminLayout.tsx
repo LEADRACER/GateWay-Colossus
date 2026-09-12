@@ -113,7 +113,7 @@ export default function AdminLayout({ children, profile }: AdminLayoutProps) {
           </h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 12, color: 'var(--color-text-dim)' }}>
-              {profile.username} · <span style={{ color: 'var(--color-accent)', fontWeight: 500 }}>Admin</span>
+              {profile.login} · <span style={{ color: 'var(--color-accent)', fontWeight: 500 }}>Admin</span>
             </span>
             <div style={{
               width: 32, height: 32, borderRadius: '50%',

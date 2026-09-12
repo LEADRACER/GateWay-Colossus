@@ -1,13 +1,11 @@
 export interface Profile {
   id: string
-  member_id?: number
-  username: string
+  github_id: number
+  login: string
   avatar_url?: string
   bio?: string
   role: 'admin' | 'member' | 'viewer'
   can_add_projects?: boolean
-  totp_secret?: string
-  totp_enabled?: boolean
   created_at: string
   updated_at: string
 }
@@ -27,6 +25,8 @@ export interface Project {
   repo_avatar?: string
   status: 'active' | 'archived' | 'in development'
   created_by: string
+  created_by_login?: string
+  created_by_avatar?: string
   cached_at?: string
   created_at: string
   updated_at: string

@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { getProject, updateProject } from '@/services/projects'
+import { useSession } from 'next-auth/react'
 import { parseGitHubUrl, fetchRepoInfo, fetchReadme } from '@/services/github'
 import type { Project } from '@/lib/types/database'
 import { Button } from '@/components/ui/Button'
@@ -14,6 +13,7 @@ import { Card } from '@/components/ui/Card'
 export default function EditProjectPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [project, setProject] = useState<Project | null>(null)
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(true)
@@ -23,10 +23,13 @@ export default function EditProjectPage() {
   useEffect(() => {
     async function load() {
       try {
-        const supabase = createClient()
-        const p = await getProject(supabase, id)
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user?.id !== p.created_by) {
+        const response = await fetch(`/api/projects/${id}`)
+        if (!response.ok) {
+          router.push(`/projects/${id}`)
+          return
+        }
+        const p = await response.json()
+        if (session?.user?.githubId && String(session.user.githubId) !== p.created_by) {
           router.push(`/projects/${id}`)
           return
         }
@@ -38,8 +41,8 @@ export default function EditProjectPage() {
         setLoading(false)
       }
     }
-    load()
-  }, [id, router])
+    if (status !== 'loading') load()
+  }, [id, router, session, status])
 
   async function handleSave() {
     if (!project) return
@@ -56,20 +59,30 @@ export default function EditProjectPage() {
     try {
       const repo = await fetchRepoInfo(url)
       const readme = await fetchReadme(url)
-      const supabase = createClient()
-      await updateProject(supabase, id, {
-        github_url: url,
-        name: repo.name,
-        owner: repo.owner.login,
-        repo_name: repo.name,
-        repo_description: repo.description || undefined,
-        repo_readme: readme || undefined,
-        repo_language: repo.language || undefined,
-        repo_topics: repo.topics,
-        repo_stars: repo.stargazers_count,
-        repo_license: repo.license?.spdx_id || undefined,
-        repo_avatar: repo.owner.avatar_url,
+
+      const response = await fetch(`/api/projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          github_url: url,
+          name: repo.name,
+          owner: repo.owner.login,
+          repo_name: repo.name,
+          repo_description: repo.description || undefined,
+          repo_readme: readme || undefined,
+          repo_language: repo.language || undefined,
+          repo_topics: repo.topics,
+          repo_stars: repo.stargazers_count,
+          repo_license: repo.license?.spdx_id || undefined,
+          repo_avatar: repo.owner.avatar_url,
+        }),
       })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to update')
+      }
+
       router.push(`/projects/${id}`)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to update')
@@ -78,6 +91,8 @@ export default function EditProjectPage() {
     }
   }
 
+  if (status === 'loading') return <div className="flex justify-center py-24"><Spinner size="lg" /></div>
+  if (!session?.user) return <p className="text-text-muted text-center py-24 text-sm">Please sign in</p>
   if (loading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>
   if (!project) return <p className="text-text-muted text-center py-24 text-sm">Project not found</p>
 

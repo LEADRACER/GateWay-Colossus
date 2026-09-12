@@ -16,17 +16,25 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const userId = request.headers.get('x-user-id')
+  const userLogin = request.headers.get('x-user-login')
+  const userAvatar = request.headers.get('x-user-avatar')
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const body = await request.json()
+  const supabase = await createServerSupabaseClient()
+
   const { data, error } = await supabase
     .from('projects')
-    .insert({ ...body, created_by: user.id })
+    .insert({
+      ...body,
+      created_by: userId,
+      created_by_login: userLogin,
+      created_by_avatar: userAvatar,
+    })
     .select()
     .single()
 

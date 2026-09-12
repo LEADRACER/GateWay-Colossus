@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { getMemberPermissions, toggleCanAddProject, getPermissionRequests, handlePermissionRequest } from '@/services/admin'
 import type { MemberPermission, PermissionRequest } from '@/services/admin'
 import { Spinner } from '@/components/ui/Spinner'
@@ -18,28 +17,31 @@ export default function PermissionsPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const supabase = createClient()
-      const [m, r] = await Promise.all([
-        getMemberPermissions(supabase),
-        getPermissionRequests(supabase),
-      ])
-      setMembers(m)
-      setRequests(r)
+      const response = await fetch('/api/admin/permissions')
+      if (response.ok) {
+        const data = await response.json()
+        setMembers(data.members)
+        setRequests(data.requests)
+      }
     } catch {
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function handleToggle(userId: string, current: boolean) {
     setUpdating(userId)
     try {
-      const supabase = createClient()
-      await toggleCanAddProject(supabase, userId, !current)
-      setMembers(prev => prev.map(u => u.id === userId ? { ...u, can_add_projects: !current } : u))
+      const response = await fetch(`/api/admin/permissions/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ can_add_projects: !current }),
+      })
+      if (response.ok) {
+        setMembers(prev => prev.map(u => u.id === userId ? { ...u, can_add_projects: !current } : u))
+      }
     } catch {
     } finally {
       setUpdating(null)
@@ -49,15 +51,17 @@ export default function PermissionsPage() {
   async function handleRequestAction(requestId: string, userId: string, action: 'approve' | 'deny') {
     setUpdating(requestId)
     try {
-      const supabase = createClient()
-      await handlePermissionRequest(supabase, requestId, action)
-      // Refresh both
-      const [m, r] = await Promise.all([
-        getMemberPermissions(supabase),
-        getPermissionRequests(supabase),
-      ])
-      setMembers(m)
-      setRequests(r)
+      const response = await fetch(`/api/admin/permissions/requests/${requestId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      if (response.ok) {
+        // Refresh
+        const data = await fetch('/api/admin/permissions').then(r => r.json())
+        setMembers(data.members)
+        setRequests(data.requests)
+      }
     } catch {
     } finally {
       setUpdating(null)
@@ -65,7 +69,7 @@ export default function PermissionsPage() {
   }
 
   const filtered = members.filter(u =>
-    !search || u.username?.toLowerCase().includes(search.toLowerCase())
+    !search || u.login?.toLowerCase().includes(search.toLowerCase())
   )
 
   if (loading) {
@@ -78,7 +82,6 @@ export default function PermissionsPage() {
 
   return (
     <div className="animate-fade-in">
-      {/* Tabs */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: '1px solid var(--color-border)' }}>
         <button
           onClick={() => setTab('members')}
@@ -120,7 +123,6 @@ export default function PermissionsPage() {
 
       {tab === 'members' ? (
         <>
-          {/* Search */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
             <p style={{ fontSize: 14, color: 'var(--color-text-muted)' }}>
               {members.length} member{members.length !== 1 ? 's' : ''} — toggle project add permission
@@ -142,7 +144,6 @@ export default function PermissionsPage() {
             </div>
           </div>
 
-          {/* Members table */}
           <div style={{
             background: 'var(--color-surface)',
             borderRadius: 12,
@@ -181,7 +182,7 @@ export default function PermissionsPage() {
                             </svg>
                           </div>
                           <div>
-                            <div style={{ fontWeight: 500, color: 'var(--color-text)' }}>{user.username || 'Anonymous'}</div>
+                            <div style={{ fontWeight: 500, color: 'var(--color-text)' }}>{user.login || 'Anonymous'}</div>
                             <div style={{ fontSize: 11, color: 'var(--color-text-dim)', fontFamily: 'monospace' }}>{user.id.slice(0, 8)}</div>
                           </div>
                         </div>
@@ -236,7 +237,6 @@ export default function PermissionsPage() {
         </>
       ) : (
         <>
-          {/* Requests tab */}
           <div style={{
             background: 'var(--color-surface)',
             borderRadius: 12,
@@ -268,7 +268,7 @@ export default function PermissionsPage() {
                       }}>
                         <td style={{ padding: '12px 16px' }}>
                           <div style={{ fontWeight: 500, color: 'var(--color-text)' }}>
-                            {req.username || 'Unknown'}
+                            {req.login || 'Unknown'}
                           </div>
                         </td>
                         <td style={{ padding: '12px 16px' }}>

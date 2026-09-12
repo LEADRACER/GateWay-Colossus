@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
 import { ProjectCard } from '@/components/features/project/ProjectCard'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -34,41 +33,15 @@ export default function ProfilePage() {
     setLoading(true)
     setError(null)
     try {
-      const supabase = createClient()
-
-      const { data: prof, error: profErr } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-      if (profErr || !prof) {
+      const response = await fetch(`/api/profile/${id}`)
+      if (!response.ok) {
         setError('Profile not found')
         return
       }
-      setProfile(prof)
-
-      const { data: projs } = await supabase
-        .from('projects')
-        .select('*, likes:likes(count), bookmarks:bookmarks(count), comments:comments(count)')
-        .eq('created_by', id)
-        .order('created_at', { ascending: false })
-
-      setProjects((projs || []).map((p: Project & { likes?: { count: number }[]; bookmarks?: { count: number }[]; comments?: { count: number }[] }) => ({
-        ...p,
-        like_count: p.likes?.[0]?.count ?? 0,
-        bookmark_count: p.bookmarks?.[0]?.count ?? 0,
-        comment_count: p.comments?.[0]?.count ?? 0,
-      })))
-
-      const { data: acts } = await supabase
-        .from('activities')
-        .select('*')
-        .eq('user_id', id)
-        .order('created_at', { ascending: false })
-        .limit(15)
-
-      setActivities(acts || [])
+      const data = await response.json()
+      setProfile(data.profile)
+      setProjects(data.projects)
+      setActivities(data.activities)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load profile')
     } finally {
@@ -76,7 +49,6 @@ export default function ProfilePage() {
     }
   }, [id])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   if (loading) {
@@ -103,11 +75,10 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
-      {/* Profile header */}
       <div className="mb-10">
         <div className="flex items-center gap-4">
           {profile.avatar_url ? (
-            <Image src={profile.avatar_url} alt={profile.username} width={56} height={56}
+            <Image src={profile.avatar_url} alt={profile.login} width={56} height={56}
               className="w-14 h-14 rounded-full ring-2 ring-border" />
           ) : (
             <div className="w-14 h-14 rounded-full bg-surface-alt ring-2 ring-border flex items-center justify-center">
@@ -118,7 +89,7 @@ export default function ProfilePage() {
             </div>
           )}
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-text">{profile.username}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-text">{profile.login}</h1>
             {profile.bio && (
               <p className="mt-1 text-sm text-text-muted">{profile.bio}</p>
             )}
@@ -129,7 +100,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Projects */}
       <h2 className="text-xl font-semibold text-text mb-6">Projects</h2>
       {projects.length === 0 ? (
         <EmptyState title="No projects yet" description="This user hasn't showcased any projects yet." />
@@ -141,7 +111,6 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Activity Feed */}
       {activities.length > 0 && (
         <div className="mt-10 pt-8 border-t border-border">
           <h2 className="text-xl font-semibold text-text mb-6">Recent Activity</h2>

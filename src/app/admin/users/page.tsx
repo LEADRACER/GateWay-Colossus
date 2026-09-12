@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { getAllUsers, updateUserRole } from '@/services/admin'
 import type { AdminUser } from '@/services/admin'
 import { Spinner } from '@/components/ui/Spinner'
@@ -22,9 +21,11 @@ export default function UsersPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const supabase = createClient()
-      const data = await getAllUsers(supabase)
-      setUsers(data)
+      const response = await fetch('/api/admin/users')
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data)
+      }
     } catch {
       // fail silently
     } finally {
@@ -32,15 +33,19 @@ export default function UsersPage() {
     }
   }, [])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function handleRoleChange(userId: string, newRole: 'admin' | 'member' | 'viewer') {
     setUpdating(userId)
     try {
-      const supabase = createClient()
-      await updateUserRole(supabase, userId, newRole)
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u))
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole }),
+      })
+      if (response.ok) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u))
+      }
     } catch {
       // fail silently
     } finally {
@@ -49,7 +54,7 @@ export default function UsersPage() {
   }
 
   const filtered = users.filter(u =>
-    !search || u.username?.toLowerCase().includes(search.toLowerCase()) || u.id.includes(search)
+    !search || u.login?.toLowerCase().includes(search.toLowerCase()) || u.id.includes(search)
   )
 
   if (loading) {
@@ -62,7 +67,6 @@ export default function UsersPage() {
 
   return (
     <div className="animate-fade-in">
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <p style={{ fontSize: 14, color: 'var(--color-text-muted)' }}>
           {users.length} user{users.length !== 1 ? 's' : ''} registered
@@ -85,7 +89,6 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Users table */}
       <div style={{
         background: 'var(--color-surface)',
         borderRadius: 12,
@@ -124,7 +127,7 @@ export default function UsersPage() {
                         </svg>
                       </div>
                       <div>
-                        <div style={{ fontWeight: 500, color: 'var(--color-text)' }}>{user.username || 'Anonymous'}</div>
+                        <div style={{ fontWeight: 500, color: 'var(--color-text)' }}>{user.login || 'Anonymous'}</div>
                         <div style={{ fontSize: 11, color: 'var(--color-text-dim)', fontFamily: 'monospace' }}>{user.id.slice(0, 8)}</div>
                       </div>
                     </div>

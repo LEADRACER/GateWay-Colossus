@@ -18,7 +18,7 @@ export async function getProfile(
 export async function updateProfile(
   client: TypedSupabaseClient,
   id: string,
-  updates: Partial<Pick<Profile, 'username' | 'bio' | 'avatar_url'>>,
+  updates: Partial<Pick<Profile, 'login' | 'bio' | 'avatar_url'>>,
 ) {
   const { data, error } = await client
     .from('profiles')

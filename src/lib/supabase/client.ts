@@ -10,5 +10,4 @@ export function createClient() {
   )
 }
 
-// Re-export types for convenience
 export type { Profile, Project }

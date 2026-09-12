@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
-import { addComment, getComments, deleteComment, getCommentCount } from '@/services/social'
-import type { Comment } from '@/lib/types/database'
+import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
+import type { Comment } from '@/lib/types/database'
 
 interface CommentsSectionProps {
   projectId: string
@@ -14,37 +13,25 @@ interface CommentsSectionProps {
 }
 
 export function CommentsSection({ projectId, onCountChange }: CommentsSectionProps) {
+  const { data: session } = useSession()
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
     loadComments()
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
   async function loadComments() {
     setLoading(true)
     try {
-      const supabase = createClient()
-      const data = await getComments(supabase, projectId)
-      // Enrich with profile data
-      const enriched = await Promise.all(
-        data.map(async (c) => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('username, avatar_url')
-            .eq('id', c.user_id)
-            .single()
-          return { ...c, username: profile?.username || c.user_id.slice(0, 8), avatar_url: profile?.avatar_url }
-        })
-      )
-      setComments(enriched)
+      const response = await fetch(`/api/projects/${projectId}/comments`)
+      if (response.ok) {
+        const data = await response.json()
+        setComments(data)
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load comments')
     } finally {
@@ -54,16 +41,24 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!content.trim()) return
+    if (!content.trim() || !session?.user) return
     setSubmitting(true)
     setError('')
     try {
-      const supabase = createClient()
-      await addComment(supabase, projectId, content.trim())
+      const response = await fetch(`/api/projects/${projectId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content.trim() }),
+      })
+      if (!response.ok) throw new Error('Failed to post comment')
+      
       setContent('')
       await loadComments()
-      const count = await getCommentCount(supabase, projectId)
-      onCountChange?.(count)
+      const countResponse = await fetch(`/api/projects/${projectId}/comments/count`)
+      if (countResponse.ok) {
+        const { count } = await countResponse.json()
+        onCountChange?.(count)
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to post comment')
     } finally {
@@ -73,11 +68,17 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
 
   async function handleDelete(commentId: string) {
     try {
-      const supabase = createClient()
-      await deleteComment(supabase, commentId)
+      const response = await fetch(`/api/projects/${projectId}/comments/${commentId}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) throw new Error('Failed to delete comment')
+      
       await loadComments()
-      const count = await getCommentCount(supabase, projectId)
-      onCountChange?.(count)
+      const countResponse = await fetch(`/api/projects/${projectId}/comments/count`)
+      if (countResponse.ok) {
+        const { count } = await countResponse.json()
+        onCountChange?.(count)
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to delete comment')
     }
@@ -97,27 +98,31 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
         Comments ({comments.length})
       </h3>
 
-      {/* Comment form */}
       <form onSubmit={handleSubmit} className="mb-6">
         <div className="flex gap-3">
           <div className="w-8 h-8 rounded-full bg-surface-alt flex items-center justify-center shrink-0">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-dim">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+            {session?.user?.avatarUrl ? (
+              <Image src={session.user.avatarUrl} alt={session.user.githubLogin} width={32} height={32} className="w-full h-full object-cover rounded-full" />
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-dim">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            )}
           </div>
           <div className="flex-1">
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Share your thoughts on this project..."
+              placeholder={session?.user ? "Share your thoughts on this project..." : "Sign in to comment"}
               rows={3}
               maxLength={2000}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-surface-alt text-text placeholder:text-text-dim/50 focus:outline-none focus:border-accent/50 resize-none transition-colors"
+              disabled={!session?.user}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-surface-alt text-text placeholder:text-text-dim/50 focus:outline-none focus:border-accent/50 resize-none transition-colors disabled:opacity-50"
             />
             <div className="flex items-center justify-between mt-2">
               <span className="text-xs text-text-dim">{content.length}/2000</span>
-              <Button type="submit" size="sm" disabled={!content.trim() || submitting} loading={submitting}>
+              <Button type="submit" size="sm" disabled={!content.trim() || submitting || !session?.user} loading={submitting}>
                 Post Comment
               </Button>
             </div>
@@ -126,7 +131,6 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
         </div>
       </form>
 
-      {/* Comments list */}
       {comments.length === 0 ? (
         <p className="text-sm text-text-dim text-center py-8">
           No comments yet. Be the first to share your thoughts!
@@ -153,7 +157,7 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
                       month: 'short', day: 'numeric', year: 'numeric'
                     })}
                   </span>
-                  {userId === comment.user_id && (
+                  {session?.user?.githubId && String(session.user.githubId) === comment.user_id && (
                     <button
                       onClick={() => handleDelete(comment.id)}
                       className="ml-auto text-xs text-text-dim hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"

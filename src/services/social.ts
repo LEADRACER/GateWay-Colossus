@@ -3,13 +3,10 @@ import type { Like, Bookmark, Comment, Activity, Project } from '@/lib/types/dat
 
 // ── Likes ──────────────────────────────────────────────────────────────
 
-export async function likeProject(client: TypedSupabaseClient, projectId: string) {
-  const { data: { user } } = await client.auth.getUser()
-  if (!user) throw new Error('You must be logged in to like a project')
-
+export async function likeProject(client: TypedSupabaseClient, projectId: string, userId: string) {
   const { data, error } = await client
     .from('likes')
-    .insert({ project_id: projectId, user_id: user.id })
+    .insert({ project_id: projectId, user_id: userId })
     .select()
     .single()
 
@@ -18,9 +15,8 @@ export async function likeProject(client: TypedSupabaseClient, projectId: string
     throw new Error(error.message)
   }
 
-  // Log activity
   await client.from('activities').insert({
-    user_id: user.id,
+    user_id: userId,
     project_id: projectId,
     action: 'project_liked',
   })
@@ -28,15 +24,12 @@ export async function likeProject(client: TypedSupabaseClient, projectId: string
   return data as Like
 }
 
-export async function unlikeProject(client: TypedSupabaseClient, projectId: string) {
-  const { data: { user } } = await client.auth.getUser()
-  if (!user) throw new Error('You must be logged in')
-
+export async function unlikeProject(client: TypedSupabaseClient, projectId: string, userId: string) {
   const { error } = await client
     .from('likes')
     .delete()
     .eq('project_id', projectId)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
 
   if (error) throw new Error(error.message)
 }
@@ -58,13 +51,10 @@ export async function getUserLikes(client: TypedSupabaseClient, userId: string):
 
 // ── Bookmarks ──────────────────────────────────────────────────────────
 
-export async function bookmarkProject(client: TypedSupabaseClient, projectId: string) {
-  const { data: { user } } = await client.auth.getUser()
-  if (!user) throw new Error('You must be logged in to bookmark')
-
+export async function bookmarkProject(client: TypedSupabaseClient, projectId: string, userId: string) {
   const { data, error } = await client
     .from('bookmarks')
-    .insert({ project_id: projectId, user_id: user.id })
+    .insert({ project_id: projectId, user_id: userId })
     .select()
     .single()
 
@@ -74,7 +64,7 @@ export async function bookmarkProject(client: TypedSupabaseClient, projectId: st
   }
 
   await client.from('activities').insert({
-    user_id: user.id,
+    user_id: userId,
     project_id: projectId,
     action: 'project_bookmarked',
   })
@@ -82,15 +72,12 @@ export async function bookmarkProject(client: TypedSupabaseClient, projectId: st
   return data as Bookmark
 }
 
-export async function unbookmarkProject(client: TypedSupabaseClient, projectId: string) {
-  const { data: { user } } = await client.auth.getUser()
-  if (!user) throw new Error('You must be logged in')
-
+export async function unbookmarkProject(client: TypedSupabaseClient, projectId: string, userId: string) {
   const { error } = await client
     .from('bookmarks')
     .delete()
     .eq('project_id', projectId)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
 
   if (error) throw new Error(error.message)
 }
@@ -110,14 +97,11 @@ export async function getUserBookmarks(client: TypedSupabaseClient, userId: stri
   return data.map((b) => b.project_id)
 }
 
-export async function getUserBookmarkedProjects(client: TypedSupabaseClient): Promise<Project[]> {
-  const { data: { user } } = await client.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
-
+export async function getUserBookmarkedProjects(client: TypedSupabaseClient, userId: string): Promise<Project[]> {
   const { data, error } = await client
     .from('bookmarks')
     .select('*, projects!inner(*, likes:likes(count), bookmarks:bookmarks(count), comments:comments(count))')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(error.message)
@@ -131,20 +115,17 @@ export async function getUserBookmarkedProjects(client: TypedSupabaseClient): Pr
 
 // ── Comments ───────────────────────────────────────────────────────────
 
-export async function addComment(client: TypedSupabaseClient, projectId: string, content: string) {
-  const { data: { user } } = await client.auth.getUser()
-  if (!user) throw new Error('You must be logged in to comment')
-
+export async function addComment(client: TypedSupabaseClient, projectId: string, content: string, userId: string) {
   const { data, error } = await client
     .from('comments')
-    .insert({ project_id: projectId, user_id: user.id, content })
+    .insert({ project_id: projectId, user_id: userId, content })
     .select()
     .single()
 
   if (error) throw new Error(error.message)
 
   await client.from('activities').insert({
-    user_id: user.id,
+    user_id: userId,
     project_id: projectId,
     action: 'comment_added',
   })
@@ -168,15 +149,12 @@ export async function getCommentCount(client: TypedSupabaseClient, projectId: st
   return data ?? 0
 }
 
-export async function deleteComment(client: TypedSupabaseClient, commentId: string) {
-  const { data: { user } } = await client.auth.getUser()
-  if (!user) throw new Error('You must be logged in')
-
+export async function deleteComment(client: TypedSupabaseClient, commentId: string, userId: string) {
   const { error } = await client
     .from('comments')
     .delete()
     .eq('id', commentId)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
 
   if (error) throw new Error(error.message)
 }

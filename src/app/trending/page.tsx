@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
-import { getTrendingProjects } from '@/services/discovery'
 import type { Project } from '@/lib/types/database'
 import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -16,8 +14,8 @@ export default function TrendingPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = createClient()
-    getTrendingProjects(supabase, 20)
+    fetch('/api/projects/trending')
+      .then(res => res.json())
       .then(setProjects)
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -33,7 +31,6 @@ export default function TrendingPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12 md:py-16">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
           <TrendingUp size={20} className="text-accent" />
@@ -48,7 +45,6 @@ export default function TrendingPage() {
         </div>
       </div>
 
-      {/* Results */}
       {projects.length === 0 ? (
         <EmptyState
           title="No trending projects"
@@ -60,7 +56,6 @@ export default function TrendingPage() {
             <Link key={project.id} href={`/projects/${project.id}`}>
               <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-surface
                 hover:border-accent/20 hover:bg-surface-alt/50 transition-colors group">
-                {/* Rank */}
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${
                   index === 0 ? 'bg-warning/10 text-warning' :
                   index === 1 ? 'bg-text-dim/10 text-text-dim' :
@@ -70,7 +65,6 @@ export default function TrendingPage() {
                   {index + 1}
                 </div>
 
-                {/* Avatar */}
                 {project.repo_avatar ? (
                   <Image src={project.repo_avatar} alt={project.owner} width={36} height={36}
                     className="w-9 h-9 rounded-full shrink-0 ring-1 ring-border" />
@@ -82,7 +76,6 @@ export default function TrendingPage() {
                   </div>
                 )}
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-sm text-text truncate group-hover:text-accent transition-colors">
@@ -97,7 +90,6 @@ export default function TrendingPage() {
                   </p>
                 </div>
 
-                {/* Stats */}
                 <div className="flex items-center gap-4 text-xs text-text-dim shrink-0">
                   {project.repo_stars > 0 && (
                     <span className="flex items-center gap-1">

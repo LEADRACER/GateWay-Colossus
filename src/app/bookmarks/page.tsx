@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { getUserBookmarkedProjects } from '@/services/social'
+import { useSession } from 'next-auth/react'
 import { ProjectCard } from '@/components/features/project/ProjectCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
@@ -11,30 +10,68 @@ import { Bookmark } from 'lucide-react'
 import type { Project } from '@/lib/types/database'
 
 export default function BookmarksPage() {
+  const { data: session, status } = useSession()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
+    if (!session?.user) return
     setLoading(true)
     setError(null)
     try {
-      const supabase = createClient()
-      const data = await getUserBookmarkedProjects(supabase)
-      setProjects(data)
+      const response = await fetch('/api/user/bookmarks')
+      if (response.ok) {
+        const data = await response.json()
+        setProjects(data)
+      } else {
+        setError('Failed to load bookmarks')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load bookmarks')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [session?.user])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
+
+  if (status === 'loading') {
+    return (
+      <div className="flex justify-center items-center py-24">
+        <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  if (!session?.user) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-12">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+            <Bookmark size={20} className="text-accent" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-text">
+              Bookmarks
+            </h1>
+            <p className="text-sm text-text-muted mt-0.5">
+              Projects you&apos;ve bookmarked for later
+            </p>
+          </div>
+        </div>
+        <div className="text-center py-16">
+          <p className="text-sm text-text-muted mb-4">Sign in to see your bookmarks</p>
+          <Link href="/auth/signin" className="text-sm text-accent hover:underline">
+            Sign in with GitHub
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
           <Bookmark size={20} className="text-accent" />
@@ -49,7 +86,6 @@ export default function BookmarksPage() {
         </div>
       </div>
 
-      {/* Content */}
       {loading ? (
         <div className="flex justify-center items-center py-24">
           <Spinner size="lg" />
@@ -57,18 +93,12 @@ export default function BookmarksPage() {
       ) : error ? (
         <div className="text-center py-16">
           <p className="text-sm text-error mb-4">{error}</p>
-          {error === 'Not authenticated' ? (
-            <Link href="/auth/login" className="text-sm text-accent hover:underline">
-              Sign in to see your bookmarks
-            </Link>
-          ) : (
-            <button
-              onClick={load}
-              className="text-sm text-accent hover:underline bg-transparent border-none cursor-pointer"
-            >
-              Try again
-            </button>
-          )}
+          <button
+            onClick={load}
+            className="text-sm text-accent hover:underline bg-transparent border-none cursor-pointer"
+          >
+            Try again
+          </button>
         </div>
       ) : projects.length === 0 ? (
         <EmptyState

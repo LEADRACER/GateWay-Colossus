@@ -39,15 +39,20 @@ export interface CreateProjectInput {
   repo_avatar?: string
 }
 
-export async function createProject(client: TypedSupabaseClient, input: CreateProjectInput) {
-  const { data: { user }, error: userError } = await client.auth.getUser()
-  if (userError || !user) throw new Error('You must be logged in to create a project')
-
+export async function createProject(
+  client: TypedSupabaseClient,
+  input: CreateProjectInput,
+  userId: string,
+  userLogin?: string,
+  userAvatar?: string,
+) {
   const { data, error } = await client
     .from(TABLE)
     .insert({
       ...input,
-      created_by: user.id,
+      created_by: userId,
+      created_by_login: userLogin,
+      created_by_avatar: userAvatar,
       cached_at: new Date().toISOString(),
     })
     .select()

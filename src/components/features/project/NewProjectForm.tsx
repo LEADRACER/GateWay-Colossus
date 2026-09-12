@@ -3,8 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
-import { createProject } from '@/services/projects'
 import { parseGitHubUrl, fetchRepoInfo, fetchReadme } from '@/services/github'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -41,15 +39,7 @@ export function NewProjectForm() {
 
     setLoading(true)
     try {
-      const repo: {
-        name: string
-        description: string | null
-        language: string | null
-        topics: string[]
-        stargazers_count: number
-        license: { spdx_id: string } | null
-        owner: { login: string; avatar_url: string }
-      } = await fetchRepoInfo(url)
+      const repo = await fetchRepoInfo(url)
       const readme = await fetchReadme(url)
       setPreview({
         name: repo.name,
@@ -76,20 +66,29 @@ export function NewProjectForm() {
     setError('')
 
     try {
-      const supabase = createClient()
-      await createProject(supabase, {
-        name: preview.name,
-        github_url: url,
-        owner: preview.owner,
-        repo_name: preview.repo,
-        repo_description: preview.description || undefined,
-        repo_readme: preview.readme || undefined,
-        repo_language: preview.language || undefined,
-        repo_topics: preview.topics,
-        repo_stars: preview.stars,
-        repo_license: preview.license || undefined,
-        repo_avatar: preview.avatar,
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: preview.name,
+          github_url: url,
+          owner: preview.owner,
+          repo_name: preview.repo,
+          repo_description: preview.description || undefined,
+          repo_readme: preview.readme || undefined,
+          repo_language: preview.language || undefined,
+          repo_topics: preview.topics,
+          repo_stars: preview.stars,
+          repo_license: preview.license || undefined,
+          repo_avatar: preview.avatar,
+        }),
       })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to save project')
+      }
+
       router.push('/projects')
       router.refresh()
     } catch (e: unknown) {

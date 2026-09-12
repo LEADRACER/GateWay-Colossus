@@ -3,8 +3,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
-import { moderateProject } from '@/services/admin'
 import type { Project } from '@/lib/types/database'
 import { Spinner } from '@/components/ui/Spinner'
 import { CheckCircle, XCircle, RefreshCw } from 'lucide-react'
@@ -18,14 +16,11 @@ export default function ModerationPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('status', 'in development')
-        .order('created_at', { ascending: false })
-
-      setProjects(data || [])
+      const response = await fetch('/api/admin/projects?status=in development')
+      if (response.ok) {
+        const data = await response.json()
+        setProjects(data || [])
+      }
     } catch {
       // fail silently
     } finally {
@@ -33,15 +28,19 @@ export default function ModerationPage() {
     }
   }, [])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function handleModerate(projectId: string, action: 'approve' | 'reject') {
     setActionLoading(projectId)
     try {
-      const supabase = createClient()
-      await moderateProject(supabase, projectId, action)
-      setProjects(prev => prev.filter(p => p.id !== projectId))
+      const response = await fetch(`/api/admin/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      if (response.ok) {
+        setProjects(prev => prev.filter(p => p.id !== projectId))
+      }
     } catch {
       // fail silently
     } finally {

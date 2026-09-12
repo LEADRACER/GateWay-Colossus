@@ -2,9 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { useSession } from 'next-auth/react'
 import { searchProjects, getDistinctLanguages, countProjects } from '@/services/discovery'
-import { requestAddProjectPermission } from '@/services/admin'
 import { ProjectCard } from '@/components/features/project/ProjectCard'
 import { CategoryNav } from '@/components/ui/CategoryNav'
 import { Spinner } from '@/components/ui/Spinner'
@@ -17,6 +16,7 @@ const statusOptions = ['all', 'active', 'in development', 'archived'] as const
 const PAGE_SIZE = 20
 
 export default function ProjectsPage() {
+  const { data: session, status } = useSession()
   const [projects, setProjects] = useState<Project[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -49,15 +49,14 @@ export default function ProjectsPage() {
     setLoading(true)
     setError('')
     try {
-      const supabase = createClient()
       const offset = (page - 1) * PAGE_SIZE
 
       const [data, count] = await Promise.all([
-        searchProjects(supabase, debouncedSearch, {
+        searchProjects(debouncedSearch, {
           language: languageFilter || undefined,
           status: statusFilter !== 'all' ? statusFilter : undefined,
         }, { offset, limit: PAGE_SIZE }),
-        countProjects(supabase, debouncedSearch, {
+        countProjects(debouncedSearch, {
           language: languageFilter || undefined,
           status: statusFilter !== 'all' ? statusFilter : undefined,
         }),
@@ -71,30 +70,40 @@ export default function ProjectsPage() {
     }
   }, [debouncedSearch, statusFilter, languageFilter, page])
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
-    const supabase = createClient()
-    getDistinctLanguages(supabase).then(setLanguages).catch(() => {})
+    getDistinctLanguages().then(setLanguages).catch(() => {})
   }, [])
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (data.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role, can_add_projects')
-          .eq('id', data.user.id)
-          .single()
-        if (profile) {
-          setUserRole(profile.role)
-          setCanAdd(profile.role === 'admin' || (profile.role === 'member' && profile.can_add_projects === true))
-        }
+    if (session?.user) {
+      setUserRole(session.user.role || null)
+      // Also fetch role from server if not in session
+      if (!session.user.role) {
+        fetch(`/api/user/role?githubId=${session.user.githubId}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.role) setUserRole(data.role)
+          })
+          .catch(() => {})
       }
-    })
-  }, [])
+      checkCanAdd()
+    }
+  }, [session])
+
+  async function checkCanAdd() {
+    if (!session?.user) return
+    try {
+      const response = await fetch('/api/user/can-add-project')
+      if (response.ok) {
+        const data = await response.json()
+        setCanAdd(data.canAdd)
+      }
+    } catch {
+      // silently fail
+    }
+  }
 
   const hasFilters = categoryFilter || languageFilter || statusFilter !== 'all'
 
@@ -128,9 +137,18 @@ export default function ProjectsPage() {
     return pages
   }
 
+  if (status === 'loading') {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-12 md:py-16">
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <Spinner size="lg" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-12 md:py-16">
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-text)', margin: 0, letterSpacing: '-0.02em' }}>
@@ -204,12 +222,10 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* Category nav */}
       <div style={{ marginBottom: 16 }}>
         <CategoryNav selected={categoryFilter} onSelect={setCategoryFilter} />
       </div>
 
-      {/* Advanced filters panel */}
       {showFilters && (
         <div style={{
           padding: 16, borderRadius: 12,
@@ -218,7 +234,6 @@ export default function ProjectsPage() {
           marginBottom: 20,
           display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center',
         }}>
-          {/* Status filter */}
           <div>
             <label style={{ fontSize: 11, color: 'var(--color-text-dim)', display: 'block', marginBottom: 4, fontWeight: 500 }}>
               Status
@@ -237,7 +252,6 @@ export default function ProjectsPage() {
             </select>
           </div>
 
-          {/* Language filter */}
           <div>
             <label style={{ fontSize: 11, color: 'var(--color-text-dim)', display: 'block', marginBottom: 4, fontWeight: 500 }}>
               Language
@@ -274,7 +288,6 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {/* Results */}
       {loading ? (
         <div className="flex justify-center items-center min-h-[60vh]">
           <Spinner size="lg" />
@@ -294,7 +307,6 @@ export default function ProjectsPage() {
             ))}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div style={{
               display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4,
@@ -373,7 +385,8 @@ function RequestPermissionButton() {
     setRequesting(true)
     setErr('')
     try {
-      await requestAddProjectPermission(createClient())
+      const response = await fetch('/api/user/request-permission', { method: 'POST' })
+      if (!response.ok) throw new Error('Failed to request permission')
       setDone(true)
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : 'Something went wrong')

@@ -59,11 +59,9 @@ export async function getAdminStats(client: TypedSupabaseClient): Promise<AdminS
 export async function moderateProject(
   client: TypedSupabaseClient,
   projectId: string,
-  action: 'approve' | 'reject'
+  action: 'approve' | 'reject',
+  userId: string
 ) {
-  const { data: { user } } = await client.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
-
   const newStatus = action === 'approve' ? 'active' : 'archived'
 
   const { data, error } = await client
@@ -77,7 +75,7 @@ export async function moderateProject(
 
   // Log activity
   await client.from('activities').insert({
-    user_id: user.id,
+    user_id: userId,
     project_id: projectId,
     action: action === 'approve' ? 'project_approved' : 'project_rejected',
   })
@@ -89,7 +87,7 @@ export async function moderateProject(
 
 export interface AdminUser {
   id: string
-  username: string
+  login: string
   role: 'admin' | 'member' | 'viewer'
   created_at: string
   project_count?: number
@@ -105,7 +103,7 @@ export async function getAllUsers(client: TypedSupabaseClient): Promise<AdminUse
 
   return (data || []).map((u: Profile & { projects?: { count: number }[] }) => ({
     id: u.id,
-    username: u.username,
+    login: u.login,
     role: u.role,
     created_at: u.created_at,
     project_count: u.projects?.[0]?.count ?? 0,
@@ -140,7 +138,7 @@ export async function setUserRole(
 
 export interface MemberPermission {
   id: string
-  username: string
+  login: string
   role: string
   can_add_projects: boolean
   project_count: number
@@ -150,14 +148,14 @@ export interface MemberPermission {
 export async function getMemberPermissions(client: TypedSupabaseClient): Promise<MemberPermission[]> {
   const { data, error } = await client
     .from('profiles')
-    .select('id, username, role, can_add_projects, projects:projects(count), created_at')
+    .select('id, login, role, can_add_projects, projects:projects(count), created_at')
     .in('role', ['member', 'admin'])
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(error.message)
   return (data || []).map((u) => ({
     id: u.id,
-    username: u.username,
+    login: u.login,
     role: u.role,
     can_add_projects: u.can_add_projects ?? false,
     project_count: u.projects?.[0]?.count ?? 0,
@@ -183,7 +181,7 @@ export async function toggleCanAddProject(
 export interface PermissionRequest {
   id: string
   user_id: string
-  username?: string
+  login?: string
   status: 'pending' | 'approved' | 'denied'
   created_at: string
 }
@@ -191,15 +189,15 @@ export interface PermissionRequest {
 export async function getPermissionRequests(client: TypedSupabaseClient): Promise<PermissionRequest[]> {
   const { data, error } = await client
     .from('permission_requests')
-    .select('*, profiles!inner(username)')
+    .select('*, profiles!inner(login)')
     .order('created_at', { ascending: false })
     .limit(50)
 
   if (error) throw new Error(error.message)
-  return (data || []).map((r: PermissionRequest & { profiles?: { username: string } }) => ({
+  return (data || []).map((r: PermissionRequest & { profiles?: { login: string } }) => ({
     id: r.id,
     user_id: r.user_id,
-    username: r.profiles?.username,
+    login: r.profiles?.login,
     status: r.status,
     created_at: r.created_at,
   }))
@@ -231,22 +229,19 @@ export async function handlePermissionRequest(
   }
 }
 
-export async function requestAddProjectPermission(client: TypedSupabaseClient) {
-  const { data: { user } } = await client.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
-
+export async function requestAddProjectPermission(client: TypedSupabaseClient, userId: string) {
   // Check if already has a pending request
   const { data: existing } = await client
     .from('permission_requests')
     .select('id')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .eq('status', 'pending')
     .maybeSingle()
   if (existing) throw new Error('You already have a pending request')
 
   const { error } = await client
     .from('permission_requests')
-    .insert({ user_id: user.id })
+    .insert({ user_id: userId })
 
   if (error) throw new Error(error.message)
 }

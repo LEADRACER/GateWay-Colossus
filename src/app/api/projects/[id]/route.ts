@@ -25,17 +25,29 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const userId = request.headers.get('x-user-id')
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const supabase = await createServerSupabaseClient()
+
+  // Check ownership
+  const { data: project } = await supabase
+    .from('projects')
+    .select('created_by')
+    .eq('id', id)
+    .single()
+
+  if (!project || project.created_by !== userId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const body = await request.json()
   const { data, error } = await supabase
     .from('projects')
-    .update(body)
+    .update({ ...body, cached_at: new Date().toISOString() })
     .eq('id', id)
     .select()
     .single()
@@ -52,11 +64,22 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const userId = _request.headers.get('x-user-id')
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const supabase = await createServerSupabaseClient()
+
+  const { data: project } = await supabase
+    .from('projects')
+    .select('created_by')
+    .eq('id', id)
+    .single()
+
+  if (!project || project.created_by !== userId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const { error } = await supabase.from('projects').delete().eq('id', id)
