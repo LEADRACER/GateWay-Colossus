@@ -10,6 +10,12 @@ export default function NewProjectPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
 
+  useEffect(() => {
+    if (status !== 'loading' && !session?.user) {
+      router.replace('/auth/signin?callbackUrl=/projects/new')
+    }
+  }, [router, status, session?.user])
+
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-[70vh]">
@@ -19,9 +25,6 @@ export default function NewProjectPage() {
   }
 
   if (!session?.user) {
-    useEffect(() => {
-      router.replace('/auth/signin?callbackUrl=/projects/new')
-    }, [router])
     return null
   }
 

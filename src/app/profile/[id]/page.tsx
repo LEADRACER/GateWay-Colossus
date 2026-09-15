@@ -49,7 +49,11 @@ export default function ProfilePage() {
     }
   }, [id])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    let mounted = true
+    load().then(() => {})
+    return () => { mounted = false }
+  }, [load])
 
   if (loading) {
     return (

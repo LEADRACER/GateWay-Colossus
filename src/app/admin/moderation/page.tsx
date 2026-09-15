@@ -28,7 +28,10 @@ export default function ModerationPage() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load()
+  }, [load])
 
   async function handleModerate(projectId: string, action: 'approve' | 'reject') {
     setActionLoading(projectId)

@@ -7,6 +7,7 @@ type ToastVariant = 'success' | 'error' | 'info' | 'warning'
 
 interface Toast {
   id: string
+  title?: string
   message: string
   variant: ToastVariant
   duration?: number
@@ -16,6 +17,7 @@ interface ToastContextType {
   toasts: Toast[]
   addToast: (message: string, variant?: ToastVariant, duration?: number) => void
   removeToast: (id: string) => void
+  toast: (options: { title?: string; description: string; type?: ToastVariant; duration?: number }) => void
 }
 
 const ToastContext = createContext<ToastContextType | null>(null)
@@ -110,8 +112,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [removeToast]
   )
 
+  const toast = useCallback(
+    (options: { title?: string; description: string; type?: ToastVariant; duration?: number }) => {
+      const message = options.title ? `${options.title}: ${options.description}` : options.description
+      addToast(message, options.type || 'info', options.duration)
+    },
+    [addToast]
+  )
+
   return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+    <ToastContext.Provider value={{ toasts, addToast, removeToast, toast }}>
       {children}
       <div className="fixed top-20 right-6 z-[9999] flex flex-col gap-2 pointer-events-none">
         <AnimatePresence mode="popLayout">

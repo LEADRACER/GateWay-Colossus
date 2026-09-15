@@ -57,18 +57,20 @@ export function ProjectDetailClient({ id }: Props) {
   }, [id])
 
   useEffect(() => {
-    if (status !== 'loading') load()
+    if (status !== 'loading') {
+      load()
+    }
   }, [load, status])
 
   const isOwner = session?.user?.githubId && String(session.user.githubId) === project?.created_by
 
-  const mountTime = useRef(Date.now())
+  const [mountTime, setMountTime] = useState(() => Date.now())
   const cachedAt = project?.cached_at
 
   const cacheAge = useMemo(() => {
     if (!cachedAt) return null
-    return Math.round((mountTime.current - new Date(cachedAt).getTime()) / 60000)
-  }, [cachedAt])
+    return Math.round((mountTime - new Date(cachedAt).getTime()) / 60000)
+  }, [cachedAt, mountTime])
 
   async function handleRefresh() {
     if (!project) return

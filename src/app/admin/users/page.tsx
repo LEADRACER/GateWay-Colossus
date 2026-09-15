@@ -33,7 +33,10 @@ export default function UsersPage() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load()
+  }, [load])
 
   async function handleRoleChange(userId: string, newRole: 'admin' | 'member' | 'viewer') {
     setUpdating(userId)

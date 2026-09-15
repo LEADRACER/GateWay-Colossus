@@ -34,7 +34,10 @@ export default function BookmarksPage() {
     }
   }, [session?.user])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load()
+  }, [load])
 
   if (status === 'loading') {
     return (

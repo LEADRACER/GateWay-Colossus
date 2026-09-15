@@ -121,7 +121,7 @@ export async function GET() {
 
   // Build team nodes
   const teamNodes: CanvasTeam[] = (teams || []).map((t, i) => {
-    const showcasedProject = t.projects?.find((p: any) => showcasedMap.has(p.id))
+    const showcasedProject = t.projects?.find((p: { id: string }) => showcasedMap.has(p.id))
     const isShowcased = !!showcasedProject
     const showcaseType = showcasedProject ? showcasedMap.get(showcasedProject.id) : undefined
 

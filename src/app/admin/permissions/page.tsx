@@ -29,7 +29,10 @@ export default function PermissionsPage() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load()
+  }, [load])
 
   async function handleToggle(userId: string, current: boolean) {
     setUpdating(userId)

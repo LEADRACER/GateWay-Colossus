@@ -70,7 +70,11 @@ export default function ProjectsPage() {
     }
   }, [debouncedSearch, statusFilter, languageFilter, page])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    let mounted = true
+    load().then(() => {})
+    return () => { mounted = false }
+  }, [load])
 
   useEffect(() => {
     getDistinctLanguages().then(setLanguages).catch(() => {})
@@ -88,7 +92,6 @@ export default function ProjectsPage() {
           })
           .catch(() => {})
       }
-      checkCanAdd()
     }
   }, [session])
 
@@ -104,6 +107,10 @@ export default function ProjectsPage() {
       // silently fail
     }
   }
+
+  useEffect(() => {
+    checkCanAdd()
+  }, [session, checkCanAdd])
 
   const hasFilters = categoryFilter || languageFilter || statusFilter !== 'all'
 

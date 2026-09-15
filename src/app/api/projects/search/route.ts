@@ -1,6 +1,24 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
+interface ProjectWithCounts {
+  id: string
+  name: string
+  purpose: string
+  description: string
+  github_url: string | null
+  website_url: string | null
+  logo_url: string | null
+  tags: string[]
+  status: string
+  created_by: string
+  created_at: string
+  updated_at: string
+  likes: { count: number }[]
+  bookmarks: { count: number }[]
+  comments: { count: number }[]
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('q') || ''
@@ -41,7 +59,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const projects = (data || []).map((p: any) => ({
+  const projects = (data || []).map((p: ProjectWithCounts) => ({
     ...p,
     like_count: p.likes?.[0]?.count ?? 0,
     bookmark_count: p.bookmarks?.[0]?.count ?? 0,

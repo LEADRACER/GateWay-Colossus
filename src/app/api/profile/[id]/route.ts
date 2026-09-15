@@ -29,14 +29,32 @@ export async function GET(
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
   }
 
-  // Get projects
+  interface ProjectWithCounts {
+  id: string
+  name: string
+  purpose: string
+  description: string
+  github_url: string | null
+  website_url: string | null
+  logo_url: string | null
+  tags: string[]
+  status: string
+  created_by: string
+  created_at: string
+  updated_at: string
+  likes: { count: number }[]
+  bookmarks: { count: number }[]
+  comments: { count: number }[]
+}
+
+// Get projects
   const { data: projs } = await supabase
     .from('projects')
     .select('*, likes:likes(count), bookmarks:bookmarks(count), comments:comments(count)')
     .eq('created_by', profile.id)
     .order('created_at', { ascending: false })
 
-  const projects = (projs || []).map((p: any) => ({
+  const projects = (projs || []).map((p: ProjectWithCounts) => ({
     ...p,
     like_count: p.likes?.[0]?.count ?? 0,
     bookmark_count: p.bookmarks?.[0]?.count ?? 0,
