@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { getMemberPermissions, toggleCanAddProject, getPermissionRequests, handlePermissionRequest } from '@/services/admin'
 import type { MemberPermission, PermissionRequest } from '@/services/admin'
 import { Spinner } from '@/components/ui/Spinner'
 import { Search, Check, X } from 'lucide-react'

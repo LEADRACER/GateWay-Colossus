@@ -57,10 +57,12 @@ export default function ProjectsPage() {
         searchProjects(debouncedSearch, {
           language: languageFilter || undefined,
           status: statusFilter !== 'all' ? statusFilter : undefined,
+          category: categoryFilter || undefined,
         }, { offset, limit: PAGE_SIZE }),
         countProjects(debouncedSearch, {
           language: languageFilter || undefined,
           status: statusFilter !== 'all' ? statusFilter : undefined,
+          category: categoryFilter || undefined,
         }),
       ])
       setProjects(data as Project[])
@@ -70,7 +72,7 @@ export default function ProjectsPage() {
     } finally {
       setLoading(false)
     }
-  }, [debouncedSearch, statusFilter, languageFilter, page])
+  }, [debouncedSearch, statusFilter, languageFilter, categoryFilter, page])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -204,7 +206,7 @@ export default function ProjectsPage() {
 
 
       <div style={{ marginBottom: 16 }}>
-        <CategoryNav selected={categoryFilter} onSelect={setCategoryFilter} />
+        <CategoryNav selected={categoryFilter} onSelect={(slug) => { setCategoryFilter(slug); setPage(1) }} />
       </div>
 
       {showFilters && (

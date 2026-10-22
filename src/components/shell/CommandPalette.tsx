@@ -43,7 +43,7 @@ export function CommandPalette() {
       { id: 'teams', label: 'teams', hint: 'open the constellation', href: '/teams', icon: Network, keywords: 'crew squad constellation map' },
       { id: 'bookmarks', label: 'bookmarks', hint: 'your saved shelf', href: '/bookmarks', icon: Bookmark, keywords: 'saved saved ' },
       { id: 'new-project', label: 'new project', hint: 'showcase your work', href: '/projects/new', icon: Plus, keywords: 'add submit create' },
-      { id: 'profile', label: 'profile', hint: status === 'authenticated' && session?.user?.githubLogin ? `@${session.user.githubLogin}` : 'sign in to view', href: '/profile', icon: UserRound, keywords: 'me account' },
+      { id: 'profile', label: 'profile', hint: status === 'authenticated' && session?.user?.githubLogin ? `@${session.user.githubLogin}` : 'sign in to view', href: status === 'authenticated' && session?.user?.id ? `/profile/${session.user.id}` : '/auth/signin', icon: UserRound, keywords: 'me account' },
       { id: 'scene-rain', label: 'scene: rain', hint: 'matrix rain', icon: Terminal, keywords: 'switch scene bg rain' },
       { id: 'scene-constellation', label: 'scene: constellation', hint: 'team map', icon: Terminal, keywords: 'switch scene map constellation' },
       { id: 'scene-ticker', label: 'scene: ticker', hint: 'star ticker', icon: Terminal, keywords: 'switch scene ticker' },

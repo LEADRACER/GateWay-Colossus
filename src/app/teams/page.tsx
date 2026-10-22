@@ -4,7 +4,6 @@ import { Suspense } from 'react'
 
 import Link from 'next/link'
 import { TeamList } from '@/components/features/team/TeamList'
-import { COPY } from '@/components/shell/copy'
 import { Spinner } from '@/components/ui/Spinner'
 import { useSupabaseSession as useSession } from '@/hooks/useSupabaseSession'
 
@@ -22,7 +21,7 @@ export default function TeamsPage() {
           href="/teams/new"
           className="inline-flex items-center gap-2 h-10 px-4 bg-green text-text-on-accent font-mono text-xs uppercase tracking-[0.08em] hover:bg-green-dim transition-colors mb-10"
         >
-          + {COPY.nav.newProject === 'Add Project' ? 'create team' : 'create team'}
+          + create team
         </Link>
       )}
 

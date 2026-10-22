@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { getAllUsers, updateUserRole } from '@/services/admin'
 import type { AdminUser } from '@/services/admin'
 import { Spinner } from '@/components/ui/Spinner'
 import { Search } from 'lucide-react'

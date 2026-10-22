@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSupabaseSession as useSession } from '@/hooks/useSupabaseSession'
@@ -10,14 +10,14 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { TeamCard } from '@/components/features/team/TeamCard'
-import type { Team, TeamMember, TeamJoinRequest } from '@/lib/types/database'
-import { Users, Plus, Settings, UsersRound, FolderKanban, Mail, ChevronRight } from 'lucide-react'
+import type { Team, TeamMember, TeamJoinRequest, Project } from '@/lib/types/database'
+import { Users, Plus, Settings, UsersRound, FolderKanban, Mail } from 'lucide-react'
 
 interface TeamData {
   team: Team | null
   members: TeamMember[]
   joinRequests: TeamJoinRequest[]
-  projects: any[]
+  projects: Project[]
   loading: boolean
   error: string | null
 }
@@ -25,7 +25,6 @@ interface TeamData {
 export default function TeamProfilePage() {
   const params = useParams()
   const code = params.code as string
-  const router = useRouter()
   const { data: session, status } = useSession()
   const [data, setData] = useState<TeamData>({
     team: null,
@@ -36,6 +35,7 @@ export default function TeamProfilePage() {
     error: null,
   })
   const [activeTab, setActiveTab] = useState<'overview' | 'members' | 'projects' | 'requests'>('overview')
+  const [busy, setBusy] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setData(prev => ({ ...prev, loading: true, error: null }))
@@ -87,6 +87,50 @@ export default function TeamProfilePage() {
   }
 
   const pendingMember = isMember ? members.find(m => m.user_id === userGithubId && m.status === 'pending') : null
+
+  async function act(key: string, fn: () => Promise<Response>, messages: { ok: string }) {
+    setBusy(key)
+    try {
+      const res = await fn()
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Action failed')
+      }
+      await load()
+      setActiveTab(key.startsWith('jr') ? 'requests' : activeTab)
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : messages.ok)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const requestJoin = () =>
+    act('join', () =>
+      fetch(`/api/teams/${code}/join-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `Join request from ${session?.user?.githubLogin ?? 'a github user'}` }),
+      }), { ok: 'Request sent' })
+
+  const acceptRequest = (id: string) =>
+    act(`jr-accept-${id}`, () => fetch(`/api/teams/${code}/join-requests/${id}/accept`, { method: 'POST' }), { ok: 'Request accepted' })
+
+  const rejectRequest = (id: string) =>
+    act(`jr-reject-${id}`, () => fetch(`/api/teams/${code}/join-requests/${id}/reject`, { method: 'POST' }), { ok: 'Request rejected' })
+
+  const changeRole = (memberId: string, role: string) =>
+    act(`member-${memberId}`, () =>
+      fetch(`/api/teams/${code}/members/${memberId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      }), { ok: 'Role updated' })
+
+  const removeMember = (memberId: string) => {
+    if (!window.confirm('Remove this member from the team?')) return
+    act(`member-${memberId}`, () => fetch(`/api/teams/${code}/members/${memberId}`, { method: 'DELETE' }), { ok: 'Member removed' })
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12 md:py-16">
@@ -156,8 +200,8 @@ export default function TeamProfilePage() {
           {!isMember && (
             <Button
               variant={team.is_public && !team.is_locked ? 'primary' : 'secondary'}
-              disabled={!team.is_public || team.is_locked}
-              onClick={() => setActiveTab('requests')}
+              disabled={!team.is_public || team.is_locked || busy === 'join'}
+              onClick={requestJoin}
               className="gap-1"
             >
               <Mail size={14} />
@@ -168,7 +212,7 @@ export default function TeamProfilePage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue={activeTab} onValueChange={(value) => setActiveTab(value as 'overview' | 'members' | 'projects' | 'requests')} className="w-full">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'overview' | 'members' | 'projects' | 'requests')} className="w-full">
         <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="overview" className="gap-2">
             <FolderKanban size={14} /> Overview
@@ -268,15 +312,20 @@ export default function TeamProfilePage() {
                     <div className="flex items-center gap-2">
                       <select
                         defaultValue={member.role}
-                        onChange={(e) => {
-                          // TODO: update role
-                        }}
+                        disabled={busy === `member-${member.user_id}`}
+                        onChange={(e) => void changeRole(member.user_id, e.target.value)}
                         className="px-2 py-1 text-sm rounded-lg border border-border bg-surface text-text"
                       >
                         <option value="admin">Admin</option>
                         <option value="member">Member</option>
                       </select>
-                      <Button variant="ghost" size="sm" className="text-error hover:text-error/80">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={busy === `member-${member.user_id}`}
+                        className="text-error hover:text-error/80"
+                        onClick={() => removeMember(member.user_id)}
+                      >
                         Remove
                       </Button>
                     </div>
@@ -315,7 +364,7 @@ export default function TeamProfilePage() {
           ) : (
             <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
               {projects.map((project) => (
-                <TeamCard key={project.id} team={{ ...project, name: project.name, code: project.id, member_count: 0, is_locked: false, is_public: true, leader_id: '', created_at: '', updated_at: '' }} />
+                <TeamCard key={project.id} team={{ ...project, name: project.name, code: project.id, member_count: 0, is_locked: false, is_public: true, leader_id: '', created_at: '', updated_at: '', slug: '' }} />
               ))}
             </div>
           )}
@@ -361,10 +410,22 @@ export default function TeamProfilePage() {
                   </span>
                   {request.status === 'pending' && (isLeader || isAdmin) && (
                     <div className="flex gap-2">
-                      <Button size="sm" variant="secondary" className="gap-1">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="gap-1"
+                        disabled={busy === `jr-accept-${request.id}`}
+                        onClick={() => acceptRequest(request.id)}
+                      >
                         Accept
                       </Button>
-                      <Button size="sm" variant="ghost" className="text-error">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={busy === `jr-reject-${request.id}`}
+                        className="text-error"
+                        onClick={() => rejectRequest(request.id)}
+                      >
                         Reject
                       </Button>
                     </div>

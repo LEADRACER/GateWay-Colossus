@@ -82,6 +82,7 @@ export async function getProjectsByCategory(
 
   if (error) throw new Error(error.message)
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []).map((d: any) => ({
     ...(Array.isArray(d.projects) ? d.projects[0] : d.projects),
     like_count: d.projects.likes?.[0]?.count ?? 0,
@@ -198,6 +199,7 @@ export async function searchProjects(
   const params = new URLSearchParams()
   if (query) params.set('q', query)
   if (filters?.language) params.set('language', filters.language)
+  if (filters?.category) params.set('category', filters.category)
   if (filters?.status && filters.status !== 'all') params.set('status', filters.status)
   if (filters?.sort) params.set('sort', filters.sort)
   if (pagination?.offset) params.set('offset', String(pagination.offset))
@@ -214,6 +216,7 @@ export async function searchProjects(
 export async function countProjects(
   query: string,
   filters?: {
+    category?: string
     language?: string
     status?: string
   }
@@ -221,6 +224,7 @@ export async function countProjects(
   const params = new URLSearchParams()
   if (query) params.set('q', query)
   if (filters?.language) params.set('language', filters.language)
+  if (filters?.category) params.set('category', filters.category)
   if (filters?.status && filters.status !== 'all') params.set('status', filters.status)
 
   const response = await fetch(`/api/projects/count?${params.toString()}`)

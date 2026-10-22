@@ -5,6 +5,7 @@ import { COPY } from '@/components/shell/copy'
 
 export default function ErrorPage({
   error,
+  reset,
 }: {
   error: Error & { digest?: string }
   reset: () => void
@@ -19,7 +20,7 @@ export default function ErrorPage({
       <p className="mt-4 font-mono text-[11px] text-text-dim">
         {COPY.brand.line1.replace(/:$/, '')}:{COPY.brand.line2} has logged the trace. nothing is lost.
       </p>
-      <Button variant="secondary" className="mt-8" onClick={() => { window.location.reload() }}>
+      <Button variant="secondary" className="mt-8" onClick={() => reset()}>
         re-boot session
       </Button>
     </div>
