@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   const userId = request.headers.get('x-user-id')
+  const githubId = request.headers.get('x-github-id')
   const userLogin = request.headers.get('x-user-login')
   const userAvatar = request.headers.get('x-user-avatar')
 
@@ -12,19 +13,29 @@ export async function POST(request: Request) {
 
   const supabase = await createServerSupabaseClient()
 
-  // Check if profile exists, create if not
+  // Look up by auth id first (uuid); fall back to github id for legacy sessions.
   let { data: profile } = await supabase
     .from('profiles')
     .select('id, role')
-    .eq('github_id', userId)
+    .eq('id', userId)
     .single()
+
+  if (!profile && githubId) {
+    const legacy = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('github_id', parseInt(githubId, 10))
+      .single()
+    profile = legacy.data
+  }
 
   if (!profile) {
     // Create profile from GitHub info
     const { data: newProfile, error: insertError } = await supabase
       .from('profiles')
       .insert({
-        github_id: parseInt(userId, 10),
+        id: userId,
+        github_id: githubId ? parseInt(githubId, 10) : null,
         login: userLogin,
         avatar_url: userAvatar,
         role: 'viewer',
