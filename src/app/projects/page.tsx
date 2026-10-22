@@ -10,6 +10,8 @@ import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import type { Project } from '@/lib/types/database'
+import { Stagger, StaggerRow } from '@/components/motion'
+import { COPY } from '@/components/shell/copy'
 import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const statusOptions = ['all', 'active', 'in development', 'archived'] as const
@@ -71,9 +73,8 @@ export default function ProjectsPage() {
   }, [debouncedSearch, statusFilter, languageFilter, page])
 
   useEffect(() => {
-    let mounted = true
-    load().then(() => {})
-    return () => { mounted = false }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load()
   }, [load])
 
   useEffect(() => {
@@ -82,8 +83,7 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     if (session?.user) {
-      setUserRole(session.user.role || null)
-      // Also fetch role from server if not in session
+      setUserRole(session.user.role || null) // eslint-disable-line react-hooks/set-state-in-effect
       if (!session.user.role) {
         fetch(`/api/user/role?githubId=${session.user.githubId}`)
           .then(res => res.json())
@@ -95,7 +95,7 @@ export default function ProjectsPage() {
     }
   }, [session])
 
-  async function checkCanAdd() {
+  const checkCanAdd = useCallback(async () => {
     if (!session?.user) return
     try {
       const response = await fetch('/api/user/can-add-project')
@@ -106,11 +106,12 @@ export default function ProjectsPage() {
     } catch {
       // silently fail
     }
-  }
+  }, [session])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     checkCanAdd()
-  }, [session, checkCanAdd])
+  }, [checkCanAdd])
 
   const hasFilters = categoryFilter || languageFilter || statusFilter !== 'all'
 
@@ -156,122 +157,79 @@ export default function ProjectsPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12 md:py-16">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-text)', margin: 0, letterSpacing: '-0.02em' }}>
-            Projects
+          <h1 className="font-mono text-2xl md:text-3xl font-bold text-text tracking-tight">
+            {COPY.nav.projects.toLowerCase()}
           </h1>
-          <p style={{ fontSize: 14, color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
-            {total} project{total !== 1 ? 's' : ''} found
+          <p className="font-mono text-xs text-text-dim mt-1.5">
+            {total} record{total !== 1 ? 's' : ''} in the index
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="flex gap-3 items-center">
           {canAdd ? (
-          <Link href="/projects/new">
-            <button
-              style={{
-                padding: '8px 14px', borderRadius: 8,
-                background: 'var(--color-accent)',
-                color: '#fff',
-                border: 'none',
-                cursor: 'pointer', fontSize: 13, fontWeight: 600,
-                display: 'flex', alignItems: 'center', gap: 6,
-                transition: 'opacity 0.15s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            <Link
+              href="/projects/new"
+              className="inline-flex items-center gap-2 h-10 px-4 bg-green text-text-on-accent font-mono text-xs uppercase tracking-[0.08em] hover:bg-green-dim transition-colors"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Add Project
-            </button>
-          </Link>
+              + {COPY.nav.newProject.toLowerCase()}
+            </Link>
           ) : userRole === 'member' ? (
             <RequestPermissionButton />
           ) : null}
-          <div style={{ position: 'relative' }}>
-            <Search size={14} color="var(--color-text-dim)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
-            <input type="text" placeholder="Search projects..." value={search}
+          <div className="relative">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-dim" />
+            <input
+              type="text"
+              placeholder="search the index…"
+              value={search}
               onChange={e => setSearch(e.target.value)}
-              style={{
-                padding: '8px 12px 8px 30px', borderRadius: 8,
-                border: '1px solid var(--color-border)',
-                background: 'var(--color-surface)',
-                fontSize: 13, color: 'var(--color-text)',
-                outline: 'none', width: 220,
-                transition: 'border-color 0.15s',
-              }}
-              onFocus={e => e.target.style.borderColor = 'var(--color-accent)'}
-              onBlur={e => e.target.style.borderColor = 'var(--color-border)'}
+              className="w-52 bg-bg-raised border border-border px-3 py-2 pl-8 font-mono text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-green/60 transition-colors"
             />
           </div>
-          <button onClick={() => setShowFilters(!showFilters)}
-            style={{
-              padding: '8px 12px', borderRadius: 8,
-              border: `1px solid ${showFilters ? 'var(--color-accent)' : 'var(--color-border)'}`,
-              background: showFilters ? 'var(--color-accent-bg)' : 'var(--color-surface)',
-              color: showFilters ? 'var(--color-accent)' : 'var(--color-text-muted)',
-              cursor: 'pointer', fontSize: 13,
-              display: 'flex', alignItems: 'center', gap: 6,
-              transition: 'all 0.15s',
-            }}>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`inline-flex items-center gap-2 h-10 px-3 border font-mono text-xs uppercase tracking-[0.08em] transition-colors cursor-pointer ${
+              showFilters
+                ? 'border-gold/60 text-gold bg-gold-subtle'
+                : 'border-border text-text-muted hover:text-text hover:border-border-light'
+            }`}
+          >
             <SlidersHorizontal size={14} />
-            Filters
-            {hasFilters && (
-              <span style={{
-                width: 6, height: 6, borderRadius: '50%',
-                background: 'var(--color-accent)',
-              }} />
-            )}
+            filters
+            {hasFilters && <span className="w-1.5 h-1.5 bg-gold" />}
           </button>
         </div>
       </div>
+
 
       <div style={{ marginBottom: 16 }}>
         <CategoryNav selected={categoryFilter} onSelect={setCategoryFilter} />
       </div>
 
       {showFilters && (
-        <div style={{
-          padding: 16, borderRadius: 12,
-          border: '1px solid var(--color-border)',
-          background: 'var(--color-surface)',
-          marginBottom: 20,
-          display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center',
-        }}>
+        <div className="p-4 rounded-none border border-border bg-bg-raised mb-5 flex gap-x-4 gap-y-3 flex-wrap items-end">
           <div>
-            <label style={{ fontSize: 11, color: 'var(--color-text-dim)', display: 'block', marginBottom: 4, fontWeight: 500 }}>
-              Status
-            </label>
-            <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-              style={{
-                padding: '6px 10px', borderRadius: 6,
-                border: '1px solid var(--color-border)',
-                background: 'var(--color-surface-2)',
-                fontSize: 12, color: 'var(--color-text)',
-                outline: 'none', cursor: 'pointer',
-              }}>
-              {statusOptions.map(s => (
-                <option key={s} value={s}>{s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}</option>
+            <label className="font-mono text-[10px] uppercase tracking-[0.08em] text-text-dim block mb-1.5">status</label>
+            <select
+              value={statusFilter}
+              onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
+              className="bg-bg border border-border px-3 py-2 font-mono text-xs text-text focus:outline-none focus:border-green/60 cursor-pointer"
+            >
+              {statusOptions.map(slot => (
+                <option key={slot} value={slot}>{slot === 'all' ? 'all' : slot}</option>
               ))}
             </select>
           </div>
 
           <div>
-            <label style={{ fontSize: 11, color: 'var(--color-text-dim)', display: 'block', marginBottom: 4, fontWeight: 500 }}>
-              Language
-            </label>
-            <select value={languageFilter} onChange={e => { setLanguageFilter(e.target.value); setPage(1) }}
-              style={{
-                padding: '6px 10px', borderRadius: 6,
-                border: '1px solid var(--color-border)',
-                background: 'var(--color-surface-2)',
-                fontSize: 12, color: 'var(--color-text)',
-                outline: 'none', cursor: 'pointer',
-              }}>
-              <option value="">All</option>
+            <label className="font-mono text-[10px] uppercase tracking-[0.08em] text-text-dim block mb-1.5">language</label>
+            <select
+              value={languageFilter}
+              onChange={e => { setLanguageFilter(e.target.value); setPage(1) }}
+              className="bg-bg border border-border px-3 py-2 font-mono text-xs text-text focus:outline-none focus:border-green/60 cursor-pointer"
+            >
+              <option value="">all</option>
               {languages.map(l => (
                 <option key={l} value={l}>{l}</option>
               ))}
@@ -279,17 +237,11 @@ export default function ProjectsPage() {
           </div>
 
           {hasFilters && (
-            <button onClick={clearFilters}
-              style={{
-                padding: '6px 12px', borderRadius: 6,
-                border: '1px solid var(--color-border)',
-                background: 'var(--color-surface-2)',
-                color: 'var(--color-text-muted)',
-                cursor: 'pointer', fontSize: 12,
-                display: 'flex', alignItems: 'center', gap: 4,
-                marginLeft: 'auto',
-              }}>
-              <X size={12} /> Clear
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1.5 px-3 py-2 border border-border font-mono text-xs text-text-muted hover:text-text hover:border-border-light transition-colors cursor-pointer ml-auto"
+            >
+              <X size={12} /> clear
             </button>
           )}
         </div>
@@ -308,54 +260,38 @@ export default function ProjectsPage() {
         />
       ) : (
         <>
-          <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-            {projects.map((p) => (
-              <ProjectCard key={p.id} project={p} />
+          <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map((proj) => (
+              <StaggerRow key={proj.id}>
+                <ProjectCard project={proj} />
+              </StaggerRow>
             ))}
-          </div>
+          </Stagger>
 
           {totalPages > 1 && (
-            <div style={{
-              display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4,
-              marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--color-border)',
-            }}>
+            <div className="flex justify-center items-center gap-1.5 mt-8 pt-6 border-t border-border font-mono text-xs">
               <button
                 onClick={() => goPage(page - 1)}
                 disabled={page <= 1}
-                style={{
-                  padding: '6px 10px', borderRadius: 6,
-                  border: '1px solid var(--color-border)',
-                  background: 'var(--color-surface)',
-                  color: page <= 1 ? 'var(--color-text-dim)' : 'var(--color-text)',
-                  cursor: page <= 1 ? 'not-allowed' : 'pointer',
-                  fontSize: 13, display: 'flex', alignItems: 'center',
-                  opacity: page <= 1 ? 0.4 : 1,
-                }}
+                className="px-2.5 h-8 border border-border text-text flex items-center disabled:opacity-40 disabled:cursor-not-allowed hover:border-border-light transition-colors"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={14} />
               </button>
 
-              {getPageNumbers().map((p, i) =>
-                p === '...' ? (
-                  <span key={`dot-${i}`} style={{ padding: '0 4px', color: 'var(--color-text-dim)', fontSize: 13 }}>
-                    ...
-                  </span>
+              {getPageNumbers().map((num, i) =>
+                num === '...' ? (
+                  <span key={`dot-${i}`} className="px-1 text-text-dim">···</span>
                 ) : (
                   <button
-                    key={p}
-                    onClick={() => goPage(p)}
-                    style={{
-                      width: 32, height: 32, borderRadius: 6,
-                      border: p === page ? '1px solid var(--color-accent)' : '1px solid transparent',
-                      background: p === page ? 'var(--color-accent-bg)' : 'transparent',
-                      color: p === page ? 'var(--color-accent)' : 'var(--color-text-muted)',
-                      cursor: 'pointer', fontSize: 13, fontWeight: p === page ? 600 : 400,
-                      transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={e => { if (p !== page) { e.currentTarget.style.background = 'var(--color-surface)'; e.currentTarget.style.color = 'var(--color-text)'; }}}
-                    onMouseLeave={e => { if (p !== page) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-muted)'; }}}
+                    key={num}
+                    onClick={() => goPage(num)}
+                    className={`w-8 h-8 border tabular-nums cursor-pointer transition-colors ${
+                      num === page
+                        ? 'border-green text-green-bright bg-green-subtle'
+                        : 'border-transparent text-text-muted hover:text-text hover:bg-surface-alt'
+                    }`}
                   >
-                    {p}
+                    {num}
                   </button>
                 )
               )}
@@ -363,17 +299,9 @@ export default function ProjectsPage() {
               <button
                 onClick={() => goPage(page + 1)}
                 disabled={page >= totalPages}
-                style={{
-                  padding: '6px 10px', borderRadius: 6,
-                  border: '1px solid var(--color-border)',
-                  background: 'var(--color-surface)',
-                  color: page >= totalPages ? 'var(--color-text-dim)' : 'var(--color-text)',
-                  cursor: page >= totalPages ? 'not-allowed' : 'pointer',
-                  fontSize: 13, display: 'flex', alignItems: 'center',
-                  opacity: page >= totalPages ? 0.4 : 1,
-                }}
+                className="px-2.5 h-8 border border-border text-text flex items-center disabled:opacity-40 disabled:cursor-not-allowed hover:border-border-light transition-colors"
               >
-                <ChevronRight size={16} />
+                <ChevronRight size={14} />
               </button>
             </div>
           )}
@@ -404,44 +332,29 @@ function RequestPermissionButton() {
 
   if (done) {
     return (
-      <span style={{
-        padding: '8px 14px', borderRadius: 8,
-        background: 'var(--color-success-bg, #0f2a1a)',
-        color: 'var(--color-success, #4ade80)',
-        fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap',
-      }}>
-        ✓ Request sent — admin will review
+      <span className="inline-flex items-center gap-2 h-10 px-4 border border-green/40 bg-green-subtle text-green-bright font-mono text-xs whitespace-nowrap">
+        ✓ request sent — admin will review
       </span>
     )
   }
 
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <span className="inline-flex items-center gap-2">
       <button
         onClick={handleRequest}
         disabled={requesting}
-        style={{
-          padding: '8px 14px', borderRadius: 8,
-          background: 'transparent',
-          color: 'var(--color-accent)',
-          border: '1px solid var(--color-accent)',
-          cursor: requesting ? 'default' : 'pointer',
-          fontSize: 13, fontWeight: 500,
-          display: 'flex', alignItems: 'center', gap: 6,
-          opacity: requesting ? 0.6 : 1,
-          transition: 'all 0.15s',
-        }}
+        className="inline-flex items-center gap-2 h-10 px-4 border border-green/50 text-green-bright font-mono text-xs uppercase tracking-[0.08em] disabled:opacity-50 hover:bg-green-subtle transition-colors"
       >
-        {requesting ? 'Sending...' : (
+        {requesting ? 'sending…' : (
           <>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
-            Request Permission
+            request permission
           </>
         )}
       </button>
-      {err && <span style={{ fontSize: 12, color: 'var(--color-error)' }}>{err}</span>}
+      {err && <span className="font-mono text-xs text-error">{err}</span>}
     </span>
   )
 }

@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { TeamCard } from './TeamCard'
+import { Stagger, StaggerRow } from '@/components/motion'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
 import type { Team } from '@/lib/types/database'
@@ -57,9 +58,8 @@ export function TeamList({ initialTeams = [], initialTotal = 0, searchable = tru
   }, [debouncedSearch, page])
 
   useEffect(() => {
-    let mounted = true
-    load().then(() => {})
-    return () => { mounted = false }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load()
   }, [load])
 
   const goPage = (p: number) => {
@@ -102,7 +102,7 @@ export function TeamList({ initialTeams = [], initialTotal = 0, searchable = tru
             placeholder="Search teams..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border bg-surface text-text placeholder:text-text-dim/50 focus:outline-none focus:border-accent/50 transition-colors"
+            className="w-full pl-10 pr-4 py-2.5 rounded-none border border-border bg-bg-raised font-mono text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-green/60 transition-colors"
           />
         </div>
       )}
@@ -114,18 +114,20 @@ export function TeamList({ initialTeams = [], initialTotal = 0, searchable = tru
         />
       ) : (
         <>
-          <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+          <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {teams.map((team) => (
-              <TeamCard key={team.id} team={team} />
+              <StaggerRow key={team.id}>
+                <TeamCard team={team} />
+              </StaggerRow>
             ))}
-          </div>
+          </Stagger>
 
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-8 pt-6 border-t border-border">
               <button
                 onClick={() => goPage(page - 1)}
                 disabled={page <= 1}
-                className="p-2 rounded-lg border border-border bg-surface text-text hover:bg-surface-alt disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-none border border-border bg-bg-raised text-text hover:bg-surface-alt font-mono disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 aria-label="Previous page"
               >
                 <ChevronLeft size={18} />
@@ -138,10 +140,10 @@ export function TeamList({ initialTeams = [], initialTotal = 0, searchable = tru
                   <button
                     key={p}
                     onClick={() => goPage(p)}
-                    className={`w-10 h-10 rounded-lg font-medium transition-all ${
+                    className={`w-10 h-10 rounded-none font-mono tabular-nums transition-colors ${
                       p === page
-                        ? 'bg-accent text-white border border-accent'
-                        : 'bg-surface border border-border text-text-muted hover:bg-surface-alt'
+                        ? 'bg-green text-text-on-accent border border-green'
+                        : 'bg-bg-raised border border-border text-text-muted hover:bg-surface-alt'
                     }`}
                   >
                     {p}
@@ -152,7 +154,7 @@ export function TeamList({ initialTeams = [], initialTotal = 0, searchable = tru
               <button
                 onClick={() => goPage(page + 1)}
                 disabled={page >= totalPages}
-                className="p-2 rounded-lg border border-border bg-surface text-text hover:bg-surface-alt disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-none border border-border bg-bg-raised text-text hover:bg-surface-alt font-mono disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 aria-label="Next page"
               >
                 <ChevronRight size={18} />

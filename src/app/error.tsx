@@ -1,29 +1,27 @@
 'use client'
 
+import { Button } from '@/components/ui/Button'
+import { COPY } from '@/components/shell/copy'
+
 export default function ErrorPage({
   error,
-  reset,
 }: {
   error: Error & { digest?: string }
   reset: () => void
 }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
-      <div className="inline-flex items-center justify-center w-14 h-14 rounded-full border border-error/20 bg-error/5 mb-5">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-error">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="15" y1="9" x2="9" y2="15" />
-          <line x1="9" y1="9" x2="15" y2="15" />
-        </svg>
-      </div>
-      <h1 className="text-base font-semibold text-text">Something went wrong</h1>
-      <p className="mt-1.5 text-sm text-text-muted max-w-sm">{error.message}</p>
-      <button
-        onClick={reset}
-        className="mt-6 text-sm text-accent hover:text-accent-dim transition-colors underline underline-offset-4 decoration-accent/30"
-      >
-        Try again
-      </button>
+      <p className="font-mono text-xs uppercase tracking-[0.12em] text-gold mb-4">[ kernel panic ]</p>
+      <h1 className="font-mono text-2xl font-bold text-text">fatal: something went wrong</h1>
+      <p className="mt-3 font-mono text-xs text-error max-w-[60ch] break-words">
+        $ {error.message || 'unhandled exception'}
+      </p>
+      <p className="mt-4 font-mono text-[11px] text-text-dim">
+        {COPY.brand.line1.replace(/:$/, '')}:{COPY.brand.line2} has logged the trace. nothing is lost.
+      </p>
+      <Button variant="secondary" className="mt-8" onClick={() => { window.location.reload() }}>
+        re-boot session
+      </Button>
     </div>
   )
 }

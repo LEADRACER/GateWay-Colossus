@@ -5,6 +5,7 @@ import { Header } from '@/components/shell/Header'
 import { Footer } from '@/components/shell/Footer'
 import { TerminalGrid } from '@/components/features/terminal/TerminalGrid'
 import { Statusbar } from '@/components/features/terminal/Statusbar'
+import { PageTransition } from '@/components/motion/PageTransition'
 import { ToastProvider } from '@/components/ui/Toast'
 
 export const metadata: Metadata = {
@@ -46,7 +47,9 @@ export default function RootLayout({
           <Header />
 
           <main id="main-content" className="flex-1 relative">
-            {children}
+            <PageTransition>
+              {children}
+            </PageTransition>
           </main>
 
           <Footer />

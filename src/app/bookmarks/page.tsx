@@ -6,7 +6,7 @@ import { useSupabaseSession as useSession } from '@/hooks/useSupabaseSession'
 import { ProjectCard } from '@/components/features/project/ProjectCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
-import { Bookmark } from 'lucide-react'
+import { Stagger, StaggerRow } from '@/components/motion'
 import type { Project } from '@/lib/types/database'
 
 export default function BookmarksPage() {
@@ -50,23 +50,16 @@ export default function BookmarksPage() {
   if (!session?.user) {
     return (
       <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-            <Bookmark size={20} className="text-accent" />
-          </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-text">
-              Bookmarks
-            </h1>
-            <p className="text-sm text-text-muted mt-0.5">
-              Projects you&apos;ve bookmarked for later
-            </p>
-          </div>
-        </div>
-        <div className="text-center py-16">
-          <p className="text-sm text-text-muted mb-4">Sign in to see your bookmarks</p>
-          <Link href="/auth/signin" className="text-sm text-accent hover:underline">
-            Sign in with GitHub
+        <p className="font-mono text-xs uppercase tracking-[0.12em] text-gold mb-2">[ your shelf ]</p>
+        <h1 className="font-mono text-2xl md:text-3xl font-bold tracking-tight text-text mb-2">bookmarks</h1>
+        <p className="text-sm text-text-muted mb-8">projects you saved for later</p>
+        <div className="text-center py-16 corner-ticks rule-dashed max-w-md mx-auto">
+          <p className="font-mono text-sm text-text-muted mb-4">sign in to see your bookmarks</p>
+          <Link
+            href="/auth/signin"
+            className="inline-flex items-center gap-2 h-10 px-4 bg-green text-text-on-accent font-mono text-xs uppercase tracking-[0.08em] hover:bg-green-dim transition-colors"
+          >
+            sign in with github
           </Link>
         </div>
       </div>
@@ -75,19 +68,9 @@ export default function BookmarksPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-          <Bookmark size={20} className="text-accent" />
-        </div>
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-text">
-            Bookmarks
-          </h1>
-          <p className="text-sm text-text-muted mt-0.5">
-            Projects you&apos;ve bookmarked for later
-          </p>
-        </div>
-      </div>
+      <p className="font-mono text-xs uppercase tracking-[0.12em] text-gold mb-2">[ your shelf ]</p>
+      <h1 className="font-mono text-2xl md:text-3xl font-bold tracking-tight text-text mb-2">bookmarks</h1>
+      <p className="text-sm text-text-muted mb-8">projects you saved for later</p>
 
       {loading ? (
         <div className="flex justify-center items-center py-24">
@@ -109,18 +92,20 @@ export default function BookmarksPage() {
           description="Bookmark projects to save them here for quick access."
           action={
             <Link href="/projects">
-              <button className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium border-none cursor-pointer">
-                Browse Projects
-              </button>
+              <span className="inline-flex items-center gap-2 h-10 px-4 bg-green text-text-on-accent font-mono text-xs uppercase tracking-[0.08em] hover:bg-green-dim transition-colors">
+                browse projects
+              </span>
             </Link>
           }
         />
       ) : (
-        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+        <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <StaggerRow key={project.id}>
+              <ProjectCard project={project} />
+            </StaggerRow>
           ))}
-        </div>
+        </Stagger>
       )}
     </div>
   )

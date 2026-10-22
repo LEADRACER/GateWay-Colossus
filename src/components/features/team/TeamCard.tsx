@@ -15,22 +15,22 @@ export function TeamCard({ team, variant = 'card' }: TeamCardProps) {
 
   if (variant === 'compact') {
     return (
-      <Link href={`/teams/${team.code}`} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-surface hover:border-accent/20 hover:bg-surface-alt transition-colors group">
+      <Link href={`/teams/${team.code}`} className="flex items-center gap-3 p-3 rounded-none border border-border bg-bg-raised hover:border-border-light hover:bg-surface-hover transition-colors group">
         {team.avatar_url ? (
-          <Image src={team.avatar_url} alt={team.name} width={40} height={40} className="w-10 h-10 rounded-full ring-1 ring-border shrink-0" />
+          <Image src={team.avatar_url} alt={team.name} width={40} height={40} className="w-10 h-10 rounded-none border border-border shrink-0" />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-accent-subtle ring-1 ring-border flex items-center justify-center shrink-0">
-            <span className="text-sm font-medium text-accent">{team.name.charAt(0).toUpperCase()}</span>
+          <div className="w-10 h-10 rounded-none bg-surface-alt border border-border flex items-center justify-center shrink-0">
+            <span className="font-mono text-sm text-green-bright">{team.name.charAt(0).toUpperCase()}</span>
           </div>
         )}
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm text-text truncate">{displayName}</p>
-          <p className="text-xs text-text-dim flex items-center gap-1">
-            <span className="w-3 h-3 rounded-full bg-accent/20" />
+          <p className="font-mono text-xs text-text-dim flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 bg-green" />
             {memberCount} member{memberCount !== 1 ? 's' : ''}
           </p>
         </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-dim group-hover:text-accent transition-colors shrink-0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-dim group-hover:text-green-bright transition-colors shrink-0">
           <path d="m9 18 6-6-6-6" />
         </svg>
       </Link>
@@ -39,17 +39,17 @@ export function TeamCard({ team, variant = 'card' }: TeamCardProps) {
 
   return (
     <Link href={`/teams/${team.code}`} className="block">
-      <div className="rounded-xl border border-border bg-surface p-5 hover:border-accent/20 hover:bg-surface-alt/50 transition-colors h-full flex flex-col">
+      <div className="rounded-none border border-border bg-bg-raised p-5 hover:border-border-light hover:bg-surface-hover transition-colors h-full flex flex-col">
         <div className="flex items-start gap-3 mb-4">
           {team.avatar_url ? (
-            <Image src={team.avatar_url} alt={team.name} width={48} height={48} className="w-12 h-12 rounded-full ring-1 ring-border shrink-0" />
+            <Image src={team.avatar_url} alt={team.name} width={48} height={48} className="w-12 h-12 rounded-none border border-border shrink-0" />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-accent-subtle ring-1 ring-border flex items-center justify-center shrink-0">
-              <span className="text-lg font-medium text-accent">{team.name.charAt(0).toUpperCase()}</span>
+            <div className="w-12 h-12 rounded-none bg-surface-alt border border-border flex items-center justify-center shrink-0">
+              <span className="font-mono text-lg text-green-bright">{team.name.charAt(0).toUpperCase()}</span>
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-base text-text truncate group-hover:text-accent transition-colors">{displayName}</h3>
+            <h3 className="font-semibold text-base text-text truncate group-hover:text-green-bright transition-colors">{displayName}</h3>
             {team.description && (
               <p className="text-xs text-text-dim mt-1 line-clamp-2">{team.description}</p>
             )}
@@ -71,7 +71,7 @@ export function TeamCard({ team, variant = 'card' }: TeamCardProps) {
             {team.project_count || 0} project{team.project_count !== 1 ? 's' : ''}
           </span>
           {team.is_locked && (
-            <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full border border-warning/30 bg-warning/10 text-warning">
+            <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] rounded-none border border-gold/30 bg-gold-subtle text-gold">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
