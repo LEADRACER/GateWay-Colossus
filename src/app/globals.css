@@ -1,34 +1,43 @@
 @import "tailwindcss";
 
 @theme {
-  /* ─── OLED Deep Palette (OKLCH) ─── */
-  --color-bg: oklch(0.25 0.2 145);
-  --color-surface: oklch(0.3 0.22 145);
-  --color-surface-alt: oklch(0.35 0.25 145);
-  --color-surface-elevated: oklch(0.4 0.28 145);
-  --color-surface-hover: oklch(0.45 0.3 145);
+  /* ─── green-terminal-v2: matte surfaces, near-black green cast ─── */
+  --color-bg: #0a0f0b;
+  --color-bg-raised: #10160f;
+  --color-surface: #131a13;
+  --color-surface-alt: #1e261e;
+  --color-surface-elevated: #10160f;
+  --color-surface-hover: #1a221a;
 
-  --color-border: oklch(0.18 0.015 145);
-  --color-border-light: oklch(0.22 0.018 145);
-  --color-border-accent: oklch(0.75 0.25 145);
+  --color-border: #2a3328;
+  --color-border-light: #3a453a;
+  --color-border-accent: #4a7c53;
 
   /* ─── Text ─── */
-  --color-text: oklch(0.95 0.005 145);
-  --color-text-muted: oklch(0.65 0.015 145);
-  --color-text-dim: oklch(0.45 0.02 145);
-  --color-text-on-accent: #050505;
+  --color-text: #d8e4d6;
+  --color-text-muted: #8a9a86;
+  --color-text-dim: #5a685a;
+  --color-text-on-accent: #0a0f0b;
 
-  /* ─── Accent (Neon Green) ─── */
-  --color-accent: oklch(0.75 0.25 145);
-  --color-accent-dim: oklch(0.6 0.2 145);
-  --color-accent-glow: oklch(0.75 0.25 145 / 0.12);
-  --color-accent-subtle: oklch(0.75 0.25 145 / 0.08);
+  /* ─── Primary accent — legacy token names (retained for existing pages) ─── */
+  --color-accent: #4a7c53;
+  --color-accent-dim: #2e4a33;
+  --color-accent-glow: rgba(74, 124, 83, 0.16);
+  --color-accent-subtle: rgba(74, 124, 83, 0.09);
+
+  /* ─── green-terminal-v2 named tokens ─── */
+  --color-green: #4a7c53;
+  --color-green-bright: #6cc47a;
+  --color-green-dim: #2e4a33;
+  --color-gold: #c8a96a;
+  --color-gold-dim: #8a744a;
+  --color-gold-subtle: rgba(200, 169, 106, 0.10);
 
   /* ─── Semantic ─── */
-  --color-success: oklch(0.7 0.22 145);
-  --color-warning: oklch(0.75 0.18 85);
-  --color-error: oklch(0.55 0.2 25);
-  --color-info: oklch(0.6 0.15 250);
+  --color-success: #6cc47a;
+  --color-warning: #c8a96a;
+  --color-error: #c05b5b;
+  --color-info: #7a9a8e;
 
   /* ─── Custom Easing Curves ─── */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -164,13 +173,56 @@ html {
   }
 
   .prose-colossus {
-    --prose-body: oklch(0.8 0.01 145);
-    --prose-heading: oklch(0.95 0.005 145);
-    --prose-border: oklch(0.18 0.015 145);
-    --prose-code-bg: oklch(0.12 0.01 145);
-    --prose-accent: oklch(0.75 0.25 145);
-    --prose-link: oklch(0.6 0.15 250);
-    --prose-block-bg: oklch(0.05 0 0);
+    --prose-body: #b8c8b6;
+    --prose-heading: #d8e4d6;
+    --prose-border: #2a3328;
+    --prose-code-bg: #10160f;
+    --prose-accent: #6cc47a;
+    --prose-link: #7a9a8e;
+    --prose-block-bg: #0a0f0b;
+  }
+
+  /* ─── green-terminal-v2 texture utilities (matte, rough) ─── */
+  .rule-dashed {
+    border: 1px dashed var(--color-border);
+  }
+  .stamp {
+    font-family: var(--font-geist-mono), 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-left: 2px solid var(--color-gold);
+    padding-left: 0.75rem;
+  }
+  .grain {
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(216, 228, 214, 0.02) 0px,
+      rgba(216, 228, 214, 0.02) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+  .corner-ticks {
+    position: relative;
+  }
+  .corner-ticks::before,
+  .corner-ticks::after {
+    font-family: var(--font-geist-mono), 'JetBrains Mono', monospace;
+    font-size: 10px;
+    line-height: 1;
+    color: var(--color-text-dim);
+    position: absolute;
+    pointer-events: none;
+  }
+  .corner-ticks::before {
+    content: '┌';
+    top: 4px;
+    left: 4px;
+  }
+  .corner-ticks::after {
+    content: '┘';
+    bottom: 4px;
+    right: 4px;
   }
 }
 

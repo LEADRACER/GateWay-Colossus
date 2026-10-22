@@ -5,6 +5,7 @@ import { CellBuffer } from '@/lib/terminal/CellBuffer'
 import { C, PAL } from '@/lib/terminal/palette'
 import { useTerminalFeed } from '@/hooks/useTerminalFeed'
 import { useTerminalEvents } from '@/hooks/useTerminalEvents'
+import { SHELL } from '@/components/shell/constants'
 import { hydrateTerminalEvents } from './events'
 import type { TerminalFeed, TerminalPointer, TerminalScene, TerminalSceneCtx } from './types'
 import { BootScene } from './scenes/BootScene'
@@ -99,16 +100,17 @@ export function TerminalGrid() {
       ctx.textBaseline = 'top'
       const charW = ctx.measureText('M').width
       const cellH = Math.round(fontSize * 1.35)
-      const topInset = 56
+      const topInset = SHELL.TOP_INSET
+      const bottomInset = SHELL.BOTTOM_INSET
       const cols = Math.max(24, Math.floor((vw - 8) / charW))
-      const rows = Math.max(14, Math.floor((vh - topInset - 8) / cellH))
+      const rows = Math.max(14, Math.floor((vh - topInset - bottomInset - 8) / cellH))
       metrics = {
         charW,
         cellH,
         cols,
         rows,
         originX: Math.floor((vw - cols * charW) / 2),
-        originY: topInset + Math.floor((vh - topInset - rows * cellH) / 2),
+        originY: topInset + Math.floor((vh - topInset - bottomInset - rows * cellH) / 2),
         fontSize,
       }
       ctx.fillStyle = PAL[C.BG]
@@ -140,7 +142,18 @@ export function TerminalGrid() {
     }
 
     measure()
-    resetScene(new URLSearchParams(window.location.search).get('scene') ?? 'boot')
+    const params = new URLSearchParams(window.location.search)
+    const requested = params.get('scene')
+    let initialScene = requested
+    if (!requested || requested === 'boot') {
+      try {
+        initialScene = sessionStorage.getItem('gw-boot-seen') ? 'rain' : 'boot'
+        sessionStorage.setItem('gw-boot-seen', '1')
+      } catch {
+        initialScene = 'boot'
+      }
+    }
+    resetScene(initialScene ?? 'boot')
 
     const drawChrome = (buffer: CellBuffer, sceneName: string, now: Date) => {
       const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
