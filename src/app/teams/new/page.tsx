@@ -113,7 +113,7 @@ export default function NewTeamPage() {
               onChange={e => setDescription(e.target.value)}
               maxLength={200}
               rows={3}
-              className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-text placeholder:text-text-dim transition-all duration-150 focus:outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent-gloss resize-none"
+              className="w-full rounded-none border border-border bg-bg-raised px-3.5 py-2.5 font-mono text-xs text-text placeholder:text-text-dim transition-colors focus:outline-none focus:border-green/60 focus:ring-2 focus:ring-green/15 resize-none"
             />
           </div>
 
