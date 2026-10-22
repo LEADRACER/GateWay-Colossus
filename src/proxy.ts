@@ -21,43 +21,46 @@ const isPublicPath = (path: string) => {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-
-  if (isPublicPath(pathname)) {
-    if (request.method === 'GET' || !pathname.startsWith('/api/')) {
-      return NextResponse.next()
-    }
-    const { identity: publicIdentity, cookieUpdates } = await resolveAuth(request)
-    if (publicIdentity) {
-      const publicHeaders = new Headers(request.headers)
-      publicHeaders.set('x-user-id', publicIdentity.githubId ?? publicIdentity.userId)
-      publicHeaders.set('x-auth-id', publicIdentity.userId)
-      publicHeaders.set('x-user-login', publicIdentity.login ?? '')
-      publicHeaders.set('x-user-avatar', publicIdentity.avatarUrl ?? '')
-      if (publicIdentity.email) publicHeaders.set('x-user-email', publicIdentity.email)
-      const publicResponse = NextResponse.next({ request: { headers: publicHeaders } })
-      cookieUpdates.forEach(({ name, value, options }) => publicResponse.cookies.set(name, value, options))
-      return publicResponse
-    }
-    return NextResponse.next()
-  }
+  const isPublic = isPublicPath(pathname)
+  const isApi = pathname.startsWith('/api/')
 
   const { identity, cookieUpdates } = await resolveAuth(request)
-  if (!identity) {
+
+  if (!identity && !isPublic) {
     const signInUrl = new URL('/auth/signin', request.url)
     signInUrl.searchParams.set('callbackUrl', pathname)
-    return NextResponse.redirect(signInUrl)
+    return cookieUpdates.length
+      ? (() => {
+          const res = NextResponse.redirect(signInUrl)
+          cookieUpdates.forEach(({ name, value, options }) => res.cookies.set(name, value, options))
+          return res
+        })()
+      : NextResponse.redirect(signInUrl)
   }
 
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-user-id', identity.githubId ?? identity.userId)
-  requestHeaders.set('x-auth-id', identity.userId)
-  requestHeaders.set('x-user-login', identity.login ?? '')
-  requestHeaders.set('x-user-avatar', identity.avatarUrl ?? '')
-  if (identity.email) requestHeaders.set('x-user-email', identity.email)
+  // Public non-API requests (plain GET pages) pass straight through.
+  if (isPublic && !isApi) {
+    if (cookieUpdates.length === 0) return NextResponse.next()
+  }
 
-  const authedResponse = NextResponse.next({ request: { headers: requestHeaders } })
-  cookieUpdates.forEach(({ name, value, options }) => authedResponse.cookies.set(name, value, options))
-  return authedResponse
+  // Always forward identity headers when we have them — including public API
+  // GETs (like/status, bookmark/status) so authed users are recognized there.
+  const requestHeaders = new Headers(request.headers)
+  if (identity) {
+    // x-user-id is the AUTH UUID: every consumer writes it into uuid columns
+    // (auth.users/profiles FKs). The GitHub id gets its own header.
+    requestHeaders.set('x-user-id', identity.userId)
+    if (identity.githubId) requestHeaders.set('x-github-id', identity.githubId)
+    requestHeaders.set('x-user-login', identity.login ?? '')
+    requestHeaders.set('x-user-avatar', identity.avatarUrl ?? '')
+    if (identity.email) requestHeaders.set('x-user-email', identity.email)
+  }
+
+  const response = NextResponse.next({
+    request: cookieUpdates.length > 0 || identity ? { headers: requestHeaders } : undefined,
+  })
+  cookieUpdates.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+  return response
 }
 
 export const config = {
