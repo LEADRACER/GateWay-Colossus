@@ -62,7 +62,7 @@ export function ProjectPreview({ project, children }: ProjectPreviewProps) {
             exit={{ opacity: 0, scale: 0.95, y: 5 }}
             transition={{ duration: 0.2 }}
             className="absolute -top-2 left-0 right-0 -translate-y-full z-20
-              rounded-xl border border-accent/20 bg-surface/95 backdrop-blur-md p-4
+              rounded-none border border-accent/25 bg-bg-raised/95 backdrop-blur-md p-4
               shadow-xl shadow-accent/5"
             style={{ transformStyle: 'preserve-3d', transform: 'translateZ(20px)' }}
           >

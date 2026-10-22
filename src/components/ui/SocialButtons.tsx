@@ -63,7 +63,7 @@ export function LikeButton({ project, onCountChange, size = 'md' }: LikeButtonPr
     <button
       onClick={handleToggle}
       disabled={loading || !session?.user}
-      className={`inline-flex items-center gap-1.5 rounded-lg transition-all duration-150 ${
+      className={`inline-flex items-center gap-1.5 rounded-none transition-all duration-150 ${
         size === 'sm' ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm'
       } ${
         liked
@@ -144,7 +144,7 @@ export function BookmarkButton({ project, size = 'md' }: BookmarkButtonProps) {
     <button
       onClick={handleToggle}
       disabled={loading || !session?.user}
-      className={`inline-flex items-center gap-1.5 rounded-lg transition-all duration-150 ${
+      className={`inline-flex items-center gap-1.5 rounded-none transition-all duration-150 ${
         size === 'sm' ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm'
       } ${
         bookmarked

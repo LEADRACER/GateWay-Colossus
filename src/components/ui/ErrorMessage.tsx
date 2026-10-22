@@ -8,7 +8,7 @@ interface ErrorMessageProps {
 export function ErrorMessage({ message, onRetry }: ErrorMessageProps) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-      <div className="mb-5 h-12 w-12 rounded-full border border-error/20 bg-error/5 flex items-center justify-center">
+      <div className="mb-5 h-12 w-12 rounded-none border border-error/20 bg-error/5 flex items-center justify-center">
         <svg
           width="20"
           height="20"

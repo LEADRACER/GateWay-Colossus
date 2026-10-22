@@ -101,9 +101,9 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
 
       <form onSubmit={handleSubmit} className="mb-6">
         <div className="flex gap-3">
-          <div className="w-8 h-8 rounded-full bg-surface-alt flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-none bg-surface-alt flex items-center justify-center shrink-0">
             {session?.user?.avatarUrl ? (
-              <Image src={session.user?.avatarUrl ?? undefined} alt={session.user?.githubLogin ?? "avatar"} width={32} height={32} className="w-full h-full object-cover rounded-full" />
+              <Image src={session.user?.avatarUrl ?? undefined} alt={session.user?.githubLogin ?? "avatar"} width={32} height={32} className="w-full h-full object-cover rounded-none" />
             ) : (
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-dim">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -119,7 +119,7 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
               rows={3}
               maxLength={2000}
               disabled={!session?.user}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-surface-alt text-text placeholder:text-text-dim/50 focus:outline-none focus:border-accent/50 resize-none transition-colors disabled:opacity-50"
+              className="w-full px-3 py-2 text-sm rounded-none border border-border bg-surface-alt text-text placeholder:text-text-dim/50 focus:outline-none focus:border-green/60 resize-none transition-colors disabled:opacity-50"
             />
             <div className="flex items-center justify-between mt-2">
               <span className="text-xs text-text-dim">{content.length}/2000</span>
@@ -140,7 +140,7 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
         <div className="space-y-4">
           {comments.map((comment) => (
             <div key={comment.id} className="flex gap-3 group">
-              <div className="w-8 h-8 rounded-full bg-surface-alt flex items-center justify-center shrink-0 overflow-hidden">
+              <div className="w-8 h-8 rounded-none bg-surface-alt flex items-center justify-center shrink-0 overflow-hidden">
                 {comment.avatar_url ? (
                   <Image src={comment.avatar_url} alt="" width={32} height={32} className="w-full h-full object-cover" />
                 ) : (

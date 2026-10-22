@@ -8,6 +8,7 @@ const PUBLIC_PATHS = [
   '/api/canvas/feed',
   '/api/feed/live',
   '/dev-tty',
+  '/dev/ui',
   '/projects',
   '/trending',
   '/profile',

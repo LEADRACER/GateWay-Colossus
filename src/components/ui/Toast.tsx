@@ -73,7 +73,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) 
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.95, transition: { duration: 0.2 } }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-md
+      className={`flex items-center gap-3 px-4 py-3 rounded-none border backdrop-blur-md
         shadow-lg shadow-black/20 ${variantStyles[toast.variant]}`}
       style={{ minWidth: 280, maxWidth: 420 }}
     >

@@ -16,7 +16,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
         </div>
       )}
       {!icon && (
-        <div className="mb-5 h-12 w-12 rounded-full border border-border bg-surface-alt flex items-center justify-center">
+        <div className="mb-5 h-12 w-12 rounded-none border border-border bg-surface-alt flex items-center justify-center">
           <svg
             width="20"
             height="20"

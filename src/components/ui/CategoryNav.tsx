@@ -39,7 +39,7 @@ export function CategoryNav({ selected, onSelect }: CategoryNavProps) {
     return (
       <div className="flex gap-2 overflow-x-auto pb-2">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-8 w-20 rounded-lg bg-surface-alt animate-pulse" />
+          <div key={i} className="h-8 w-20 rounded-none bg-surface-alt animate-pulse" />
         ))}
       </div>
     )
@@ -49,7 +49,7 @@ export function CategoryNav({ selected, onSelect }: CategoryNavProps) {
     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
       <button
         onClick={() => onSelect(null)}
-        className={`shrink-0 px-3 py-1.5 text-sm rounded-lg transition-all duration-150 ${
+        className={`shrink-0 px-3 py-1.5 text-sm rounded-none transition-all duration-150 ${
           selected === null
             ? 'bg-accent text-[#050505] font-medium'
             : 'bg-surface-alt text-text-muted hover:text-text border border-transparent hover:border-border'
@@ -61,7 +61,7 @@ export function CategoryNav({ selected, onSelect }: CategoryNavProps) {
         <button
           key={cat.slug}
           onClick={() => onSelect(selected === cat.slug ? null : cat.slug)}
-          className={`shrink-0 px-3 py-1.5 text-sm rounded-lg transition-all duration-150 flex items-center gap-1.5 ${
+          className={`shrink-0 px-3 py-1.5 text-sm rounded-none transition-all duration-150 flex items-center gap-1.5 ${
             selected === cat.slug
               ? 'bg-accent text-[#050505] font-medium'
               : 'bg-surface-alt text-text-muted hover:text-text border border-transparent hover:border-border'

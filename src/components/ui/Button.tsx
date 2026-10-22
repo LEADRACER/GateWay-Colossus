@@ -14,19 +14,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-accent text-[#050505] font-medium hover:brightness-110 active:brightness-90 shadow-[0_0_12px_-6px_oklch(0.75_0.25_145/0.5)]',
+    'bg-green text-text-on-accent font-mono uppercase tracking-[0.08em] hover:bg-green-dim active:brightness-95',
   secondary:
-    'border border-border bg-surface-alt text-text hover:bg-surface hover:border-text-dim/30 active:scale-[0.98]',
+    'border border-border bg-bg-raised text-text font-mono uppercase tracking-[0.08em] hover:border-border-light hover:bg-surface-hover',
   ghost:
-    'text-text-muted hover:text-text hover:bg-surface-alt active:scale-[0.98]',
+    'text-text-muted font-mono hover:text-text hover:bg-surface-alt',
   danger:
-    'border border-error/30 bg-error/5 text-error hover:bg-error/10 hover:border-error/50 active:scale-[0.98]',
+    'border border-error/40 bg-transparent text-error font-mono uppercase tracking-[0.08em] hover:bg-error/10 hover:border-error/60',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-xs gap-1.5 rounded-lg',
-  md: 'h-9 px-4 text-sm gap-2 rounded-lg',
-  lg: 'h-10 px-5 text-sm gap-2.5 rounded-lg',
+  sm: 'h-8 px-3 text-[11px] gap-1.5',
+  md: 'h-10 px-4 text-xs gap-2',
+  lg: 'h-12 px-6 text-sm gap-2.5',
 }
 
 export function Button({
@@ -40,8 +40,8 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center whitespace-nowrap
-        transition-all duration-150 ease-spring
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-none
+        transition-colors duration-150
         disabled:opacity-40 disabled:pointer-events-none
         ${variantClasses[variant]}
         ${sizeClasses[size]}

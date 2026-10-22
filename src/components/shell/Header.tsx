@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { UserMenu } from '@/components/features/auth/UserMenu'
+import { CommandPalette } from '@/components/shell/CommandPalette'
 import { COPY } from './copy'
 
 const NAV = [
@@ -33,9 +34,9 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-3 py-1.5 rounded-md transition-colors ${
+                className={`px-3 py-1.5 rounded-none transition-colors font-mono text-xs uppercase tracking-[0.06em] ${
                   active
-                    ? 'text-text border-b-2 border-green'
+                    ? 'text-green-bright border-b-2 border-gold'
                     : 'text-text-muted hover:text-text hover:bg-surface-alt'
                 }`}
               >
@@ -43,9 +44,16 @@ export function Header() {
               </Link>
             )
           })}
+          <kbd
+            className="hidden sm:inline-flex ml-2 h-7 items-center gap-1 border border-border px-2 font-mono text-[10px] text-text-dim"
+            title="command palette"
+          >
+            ⌘K
+          </kbd>
           <UserMenu />
         </nav>
       </div>
+      <CommandPalette />
     </header>
   )
 }
