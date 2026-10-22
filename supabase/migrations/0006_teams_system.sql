@@ -119,42 +119,56 @@ CREATE POLICY "Leaders can delete own teams" ON teams
 -- TEAM MEMBERS: Members can view, leader/admin manage
 ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
 
+-- SECURITY DEFINER helper: TEAM MEMBERS POLICIES MUST NOT query team_members
+-- directly (would recurse). This function bypasses RLS and answers
+-- "is user X an active member of team Y with at least role min_role?"
+CREATE OR REPLACE FUNCTION is_team_member(p_team UUID, p_user UUID, min_role TEXT DEFAULT 'member')
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+DECLARE
+  r TEXT;
+  req INT;
+  have INT;
+BEGIN
+  IF min_role = 'leader' THEN req := 2;
+  ELSIF min_role = 'admin' THEN req := 1;
+  ELSE req := 0;
+  END IF;
+
+  SELECT role INTO r FROM team_members
+  WHERE team_id = p_team AND user_id = p_user AND status = 'active';
+
+  have := CASE r WHEN 'leader' THEN 2 WHEN 'admin' THEN 1 WHEN 'member' THEN 0 ELSE -1 END;
+  RETURN have >= req;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION is_team_member(UUID, UUID, TEXT) TO anon, authenticated;
+
 -- Team members can view team membership
 DROP POLICY IF EXISTS "Team members can view membership" ON team_members;
 CREATE POLICY "Team members can view membership" ON team_members
   FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM team_members tm
-      WHERE tm.team_id = team_members.team_id
-      AND tm.user_id = auth.uid()::uuid
-      AND tm.status = 'active'
-    )
+    user_id = auth.uid()::uuid
+    OR is_team_member(team_members.team_id, auth.uid()::uuid)
   );
 
 -- Leader/Admin can insert (invite)
 DROP POLICY IF EXISTS "Leaders and admins can invite members" ON team_members;
 CREATE POLICY "Leaders and admins can invite members" ON team_members
   FOR INSERT WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM team_members tm
-      WHERE tm.team_id = team_members.team_id
-      AND tm.user_id = auth.uid()::uuid
-      AND tm.role IN ('leader','admin')
-      AND tm.status = 'active'
-    )
+    is_team_member(team_members.team_id, auth.uid()::uuid, 'leader')
   );
 
 -- Leader/Admin can update roles
 DROP POLICY IF EXISTS "Leaders and admins can update member roles" ON team_members;
 CREATE POLICY "Leaders and admins can update member roles" ON team_members
   FOR UPDATE USING (
-    EXISTS (
-      SELECT 1 FROM team_members tm
-      WHERE tm.team_id = team_members.team_id
-      AND tm.user_id = auth.uid()::uuid
-      AND tm.role IN ('leader','admin')
-      AND tm.status = 'active'
-    )
+    is_team_member(team_members.team_id, auth.uid()::uuid, 'leader')
   );
 
 -- Users can leave team (update status to 'left')
@@ -166,13 +180,7 @@ CREATE POLICY "Users can leave teams" ON team_members
 DROP POLICY IF EXISTS "Leaders and admins can remove members" ON team_members;
 CREATE POLICY "Leaders and admins can remove members" ON team_members
   FOR DELETE USING (
-    EXISTS (
-      SELECT 1 FROM team_members tm
-      WHERE tm.team_id = team_members.team_id
-      AND tm.user_id = auth.uid()::uuid
-      AND tm.role IN ('leader','admin')
-      AND tm.status = 'active'
-    )
+    is_team_member(team_members.team_id, auth.uid()::uuid, 'leader')
   );
 
 -- JOIN REQUESTS
