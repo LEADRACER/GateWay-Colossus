@@ -270,19 +270,18 @@ CREATE POLICY "Admins manage showcase requests" ON showcase_requests
   );
 
 -- PROJECTS: Extend existing RLS for team_id
--- (Assuming projects already have RLS - add team_id visibility)
 -- Team members can view team projects
--- DROP POLICY IF EXISTS "Team members view team projects" ON projects;
+DROP POLICY IF EXISTS "Team members view team projects" ON projects;
 CREATE POLICY "Team members view team projects" ON projects
---   FOR SELECT USING (
---     team_id IS NULL
---     OR EXISTS (
---       SELECT 1 FROM team_members tm
---       WHERE tm.team_id = projects.team_id
---       AND tm.user_id = auth.uid()::uuid
---       AND tm.status = 'active'
---     )
---   );
+  FOR SELECT USING (
+    team_id IS NULL
+    OR EXISTS (
+      SELECT 1 FROM team_members tm
+      WHERE tm.team_id = projects.team_id
+      AND tm.user_id = auth.uid()::uuid
+      AND tm.status = 'active'
+    )
+  );
 
 -- ============================================================
 -- HELPER FUNCTIONS
@@ -292,18 +291,18 @@ CREATE POLICY "Team members view team projects" ON projects
 CREATE OR REPLACE FUNCTION generate_team_code()
 RETURNS TEXT AS $$
 DECLARE
-  code TEXT;
+  new_code TEXT;
   attempts INT := 0;
 BEGIN
   LOOP
-    code := upper(substring(md5(random()::text || clock_timestamp()::text) from 1 for 6));
-    EXIT WHEN NOT EXISTS (SELECT 1 FROM teams WHERE code = generate_team_code.code);
+    new_code := upper(substring(md5(random()::text || clock_timestamp()::text) from 1 for 6));
+    EXIT WHEN NOT EXISTS (SELECT 1 FROM teams WHERE teams.code = new_code);
     attempts := attempts + 1;
     IF attempts > 10 THEN
       RAISE EXCEPTION 'Failed to generate unique team code';
     END IF;
   END LOOP;
-  RETURN code;
+  RETURN new_code;
 END;
 $$ LANGUAGE plpgsql;
 
