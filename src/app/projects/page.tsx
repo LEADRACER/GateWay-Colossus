@@ -273,6 +273,7 @@ export default function ProjectsPage() {
               <button
                 onClick={() => goPage(page - 1)}
                 disabled={page <= 1}
+                aria-label="previous page"
                 className="px-2.5 h-8 border border-border text-text flex items-center disabled:opacity-40 disabled:cursor-not-allowed hover:border-border-light transition-colors"
               >
                 <ChevronLeft size={14} />
@@ -299,6 +300,7 @@ export default function ProjectsPage() {
               <button
                 onClick={() => goPage(page + 1)}
                 disabled={page >= totalPages}
+                aria-label="next page"
                 className="px-2.5 h-8 border border-border text-text flex items-center disabled:opacity-40 disabled:cursor-not-allowed hover:border-border-light transition-colors"
               >
                 <ChevronRight size={14} />

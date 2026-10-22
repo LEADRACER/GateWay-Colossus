@@ -208,7 +208,7 @@ Deliberately **quiet**: one shared `AdminShell` (sidebar table-style: mono upper
 
 ## 7. Implementation phases
 
-### P0 — Foundations (1 commit)
+### P0 — Foundations (1 commit) — DONE (3c1c768)
 - [ ] `globals.css` token rewrite + texture utilities; delete glow/gradient blocks
 - [ ] `components/motion/` library (`variants.ts` incl. §9.6 recipes, FadeIn, Stagger, PageTransition, CountUp)
 - [ ] Delete HolographicUI / ImmersiveTransitions USAGE references (page.tsx de-holographed in P1, but imports must not dangle)
@@ -217,27 +217,27 @@ Deliberately **quiet**: one shared `AdminShell` (sidebar table-style: mono upper
 - [ ] BootScene first-visit-only flag (sessionStorage) + `BOTTOM_INSET=24` Statusbar reservation
 - **Verify:** tsc, eslint, home boots, header/footer visible
 
-### P1 — Home rebuild (1 commit)
+### P1 — Home rebuild (1 commit) — DONE (11b1e13)
 - [ ] `sections/` five components (fetch via existing `/api/feed/live` + services; no new endpoints)
 - [ ] `page.tsx` becomes thin `HeroTerminal + sections` assembly, ~150 lines
 - [ ] Terminal palette text-alignment tweak + scanline opacity
 - [ ] `Statusbar.tsx` live (scene cycle + event count + clock)
 - **Verify:** screenshots (`?scene=` switcher works, feed strip hydrates, LCP sane)
 
-### P2 — Primitives swap (1–2 commits)
+### P2 — Primitives swap (1–2 commits) — DONE (c12dda4)
 - [ ] Rebuild `ui/` matte set (Button/Card/Tag/Badge/Input/Modal/Tabs/Skeleton/EmptyState…)
 - [ ] Replace usages page-by-page: projects → teams → trending/profile/bookmarks
 - [ ] `CommandPalette.tsx` (⌘K) wired in Header
 - [ ] `/dev/ui` design shelf page
 - **Verify:** per-page screenshots, tsc, palette keyboard round-trip
 
-### P3 — Motion sweep on all pages (1 commit)
+### P3 — Motion sweep on all pages (1 commit) — DONE (a2f3f9d)
 - [ ] Apply FadeIn/Stagger/PageTransition across every route incl. admin AdminShell
 - [ ] Route transition wrapper in root layout (template.tsx approach if simpler: `app/template.tsx` w/ 180ms fade)
 - [ ] `loading.tsx` + `error.tsx` + `not-found.tsx` parity set (§9.4)
 - **Verify:** reduced-motion audit, animation checklist per page (checked off on `/dev/ui`)
 
-### P4 — Cleanup & polish
+### P4 — Cleanup & polish — DONE (whitelist audit clean, a11y pass, next build green)
 - [ ] Delete removed-design leftovers; grep `framer-motion` import whitelist
 - [ ] Lighthouse/a11y pass; contrast check green-on-black ≥ 4.5 body text
 - [ ] Copy sweep: every string through `copy.ts`

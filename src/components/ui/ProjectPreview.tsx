@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { overlayPanel } from '@/components/motion/variants'
 import type { Project } from '@/lib/types/database'
 
 interface ProjectPreviewProps {
@@ -57,18 +58,19 @@ export function ProjectPreview({ project, children }: ProjectPreviewProps) {
       <AnimatePresence>
         {isHovered && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 5 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 5 }}
-            transition={{ duration: 0.2 }}
+            variants={overlayPanel}
+            initial="hidden"
+            animate="show"
+            exit="hidden"
+            transition={{ duration: 0.18 }}
             className="absolute -top-2 left-0 right-0 -translate-y-full z-20
-              rounded-none border border-accent/25 bg-bg-raised/95 backdrop-blur-md p-4
-              shadow-xl shadow-accent/5"
+              rounded-none border border-green/25 bg-bg-raised/95 backdrop-blur-md p-4
+              shadow-xl shadow-black/20"
             style={{ transformStyle: 'preserve-3d', transform: 'translateZ(20px)' }}
           >
             <div className="flex items-center gap-2 mb-2">
               <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-              <span className="text-[11px] font-medium text-accent uppercase tracking-wider">Live Preview</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-green-bright">live preview</span>
             </div>
             <p className="text-xs text-text-muted line-clamp-3 mb-3 leading-relaxed">
               {project.repo_description || 'No description available'}
@@ -85,7 +87,7 @@ export function ProjectPreview({ project, children }: ProjectPreviewProps) {
               {project.repo_language && (
                 <span className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-accent/60" />
-                  <span className="text-accent/80">{project.repo_language}</span>
+                  <span className="font-mono text-[10px] text-text-muted">{project.repo_language}</span>
                 </span>
               )}
               {project.repo_license && (
@@ -95,14 +97,14 @@ export function ProjectPreview({ project, children }: ProjectPreviewProps) {
             {project.repo_topics && project.repo_topics.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {project.repo_topics.slice(0, 4).map((t) => (
-                  <span key={t} className="px-1.5 py-0.5 text-[9px] rounded border border-accent/15 bg-accent-subtle text-accent/80">
+                  <span key={t} className="px-1.5 py-0.5 font-mono text-[9px] rounded-none border border-border bg-surface-alt text-text-muted">
                     {t}
                   </span>
                 ))}
               </div>
             )}
             {/* Arrow pointing down */}
-            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-surface border-r border-b border-accent/20" />
+            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-surface border-r border-b border-green/25" />
           </motion.div>
         )}
       </AnimatePresence>
