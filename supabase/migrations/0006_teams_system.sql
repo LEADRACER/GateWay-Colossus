@@ -1,11 +1,8 @@
--- GateWay:Colossus Teaming System - Database Migration
--- Run in Supabase Dashboard → SQL Editor
--- Version: 1.0
+-- Teams system (idempotent port of supabase-teams-migration.sql)
+-- Previously applied by hand in the SQL editor; retained as a migration so
+-- fresh environments get the same schema via `supabase db push`.
 
--- ============================================================
--- TEAMS TABLE
--- ============================================================
-CREATE TABLE teams (
+CREATE TABLE IF NOT EXISTS teams (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,           -- "team-name-a7f3k2"
@@ -23,7 +20,7 @@ CREATE TABLE teams (
 -- ============================================================
 -- TEAM MEMBERS (Many-to-Many)
 -- ============================================================
-CREATE TABLE team_members (
+CREATE TABLE IF NOT EXISTS team_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -37,7 +34,7 @@ CREATE TABLE team_members (
 -- ============================================================
 -- TEAM JOIN REQUESTS
 -- ============================================================
-CREATE TABLE team_join_requests (
+CREATE TABLE IF NOT EXISTS team_join_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -95,22 +92,27 @@ CREATE INDEX IF NOT EXISTS idx_teams_code ON teams(code);
 ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
 
 -- Public can view public teams
+DROP POLICY IF EXISTS "Public teams are viewable by everyone" ON teams;
 CREATE POLICY "Public teams are viewable by everyone" ON teams
   FOR SELECT USING (is_public = true);
 
 -- Leader can view their own teams (even private)
+DROP POLICY IF EXISTS "Leaders can view own teams" ON teams;
 CREATE POLICY "Leaders can view own teams" ON teams
   FOR SELECT USING (leader_id = auth.uid()::uuid);
 
 -- Authenticated users can create teams
+DROP POLICY IF EXISTS "Authenticated users can create teams" ON teams;
 CREATE POLICY "Authenticated users can create teams" ON teams
   FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
 -- Leader can update own team
+DROP POLICY IF EXISTS "Leaders can update own teams" ON teams;
 CREATE POLICY "Leaders can update own teams" ON teams
   FOR UPDATE USING (leader_id = auth.uid()::uuid);
 
 -- Leader can delete own team
+DROP POLICY IF EXISTS "Leaders can delete own teams" ON teams;
 CREATE POLICY "Leaders can delete own teams" ON teams
   FOR DELETE USING (leader_id = auth.uid()::uuid);
 
@@ -118,6 +120,7 @@ CREATE POLICY "Leaders can delete own teams" ON teams
 ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
 
 -- Team members can view team membership
+DROP POLICY IF EXISTS "Team members can view membership" ON team_members;
 CREATE POLICY "Team members can view membership" ON team_members
   FOR SELECT USING (
     EXISTS (
@@ -129,6 +132,7 @@ CREATE POLICY "Team members can view membership" ON team_members
   );
 
 -- Leader/Admin can insert (invite)
+DROP POLICY IF EXISTS "Leaders and admins can invite members" ON team_members;
 CREATE POLICY "Leaders and admins can invite members" ON team_members
   FOR INSERT WITH CHECK (
     EXISTS (
@@ -141,6 +145,7 @@ CREATE POLICY "Leaders and admins can invite members" ON team_members
   );
 
 -- Leader/Admin can update roles
+DROP POLICY IF EXISTS "Leaders and admins can update member roles" ON team_members;
 CREATE POLICY "Leaders and admins can update member roles" ON team_members
   FOR UPDATE USING (
     EXISTS (
@@ -153,10 +158,12 @@ CREATE POLICY "Leaders and admins can update member roles" ON team_members
   );
 
 -- Users can leave team (update status to 'left')
+DROP POLICY IF EXISTS "Users can leave teams" ON team_members;
 CREATE POLICY "Users can leave teams" ON team_members
   FOR UPDATE USING (user_id = auth.uid()::uuid);
 
 -- Leader/Admin can delete (kick)
+DROP POLICY IF EXISTS "Leaders and admins can remove members" ON team_members;
 CREATE POLICY "Leaders and admins can remove members" ON team_members
   FOR DELETE USING (
     EXISTS (
@@ -172,6 +179,7 @@ CREATE POLICY "Leaders and admins can remove members" ON team_members
 ALTER TABLE team_join_requests ENABLE ROW LEVEL SECURITY;
 
 -- Users can view requests for teams they're in (leader/admin) or their own requests
+DROP POLICY IF EXISTS "View join requests" ON team_join_requests;
 CREATE POLICY "View join requests" ON team_join_requests
   FOR SELECT USING (
     user_id = auth.uid()::uuid
@@ -185,6 +193,7 @@ CREATE POLICY "View join requests" ON team_join_requests
   );
 
 -- Users can create join requests for public, unlocked teams
+DROP POLICY IF EXISTS "Create join requests" ON team_join_requests;
 CREATE POLICY "Create join requests" ON team_join_requests
   FOR INSERT WITH CHECK (
     EXISTS (
@@ -197,6 +206,7 @@ CREATE POLICY "Create join requests" ON team_join_requests
   );
 
 -- Leader/Admin can update (accept/reject)
+DROP POLICY IF EXISTS "Review join requests" ON team_join_requests;
 CREATE POLICY "Review join requests" ON team_join_requests
   FOR UPDATE USING (
     EXISTS (
@@ -212,10 +222,12 @@ CREATE POLICY "Review join requests" ON team_join_requests
 ALTER TABLE showcase_requests ENABLE ROW LEVEL SECURITY;
 
 -- Requester can view their own
+DROP POLICY IF EXISTS "View own showcase requests" ON showcase_requests;
 CREATE POLICY "View own showcase requests" ON showcase_requests
   FOR SELECT USING (requested_by = auth.uid()::uuid);
 
 -- Admins can view all
+DROP POLICY IF EXISTS "Admins view all showcase requests" ON showcase_requests;
 CREATE POLICY "Admins view all showcase requests" ON showcase_requests
   FOR SELECT USING (
     EXISTS (
@@ -226,6 +238,7 @@ CREATE POLICY "Admins view all showcase requests" ON showcase_requests
   );
 
 -- Users can create showcase requests for their projects (or team projects if leader/admin)
+DROP POLICY IF EXISTS "Create showcase requests" ON showcase_requests;
 CREATE POLICY "Create showcase requests" ON showcase_requests
   FOR INSERT WITH CHECK (
     requested_by = auth.uid()::uuid
@@ -246,6 +259,7 @@ CREATE POLICY "Create showcase requests" ON showcase_requests
   );
 
 -- Admins can update (approve/reject/revoke)
+DROP POLICY IF EXISTS "Admins manage showcase requests" ON showcase_requests;
 CREATE POLICY "Admins manage showcase requests" ON showcase_requests
   FOR UPDATE USING (
     EXISTS (
@@ -258,7 +272,8 @@ CREATE POLICY "Admins manage showcase requests" ON showcase_requests
 -- PROJECTS: Extend existing RLS for team_id
 -- (Assuming projects already have RLS - add team_id visibility)
 -- Team members can view team projects
--- CREATE POLICY "Team members view team projects" ON projects
+-- DROP POLICY IF EXISTS "Team members view team projects" ON projects;
+CREATE POLICY "Team members view team projects" ON projects
 --   FOR SELECT USING (
 --     team_id IS NULL
 --     OR EXISTS (
