@@ -56,7 +56,7 @@ ALTER TABLE projects
 -- ============================================================
 -- SHOWCASE REQUESTS
 -- ============================================================
-CREATE TABLE showcase_requests (
+CREATE TABLE IF NOT EXISTS showcase_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   requested_by UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
