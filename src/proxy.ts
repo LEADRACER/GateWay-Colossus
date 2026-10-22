@@ -12,6 +12,7 @@ const PUBLIC_PATHS = [
   '/projects',
   '/trending',
   '/profile',
+  '/api/profile',
   '/api/projects',
 ]
 
