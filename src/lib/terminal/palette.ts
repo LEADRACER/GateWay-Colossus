@@ -1,22 +1,22 @@
 export const NUM_COLORS = 16
 
 export const PAL: string[] = [
-  /* 0  BG            */ '#050807',
-  /* 1  FG default    */ '#a8b5aa',
-  /* 2  FG bright     */ '#dff0e2',
-  /* 3  FG muted      */ '#6e7a71',
-  /* 4  FG dim        */ '#48524b',
-  /* 5  FG ghost      */ '#2c332e',
-  /* 6  green         */ '#33c75a',
-  /* 7  green bright  */ '#5dff85',
-  /* 8  green deep    */ '#1d7a35',
-  /* 9  cyan          */ '#00d4ff',
-  /* 10 amber         */ '#ffb64a',
-  /* 11 red           */ '#ff5566',
-  /* 12 magenta       */ '#d17dff',
-  /* 13 blue          */ '#5a9dff',
-  /* 14 gray          */ '#8a938c',
-  /* 15 white         */ '#f2f7f2',
+  /* 0  BG            */ '#0a0f0b',
+  /* 1  FG default    */ '#b8c8b6',
+  /* 2  FG bright     */ '#d8e4d6',
+  /* 3  FG muted      */ '#8a9a86',
+  /* 4  FG dim        */ '#5a685a',
+  /* 5  FG ghost      */ '#2a3328',
+  /* 6  green         */ '#4a7c53',
+  /* 7  green bright  */ '#6cc47a',
+  /* 8  green deep    */ '#2e4a33',
+  /* 9  cyan          */ '#4db6c4',
+  /* 10 amber (=gold) */ '#c8a96a',
+  /* 11 red           */ '#c05b5b',
+  /* 12 magenta       */ '#c489dc',
+  /* 13 blue          */ '#6b9bd6',
+  /* 14 gray          */ '#8a9a86',
+  /* 15 white         */ '#dfe8df',
 ]
 
 export const C = {

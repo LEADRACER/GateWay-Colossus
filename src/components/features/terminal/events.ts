@@ -32,7 +32,10 @@ function notify(): void {
 function append(event: TerminalEvent): void {
   ring.push(event)
   if (ring.length > MAX_EVENTS) ring.splice(0, ring.length - MAX_EVENTS)
+  snapshot = [...ring]
 }
+
+let snapshot: TerminalEvent[] = []
 
 export function pushTerminalEvent(kind: TerminalEventKind, text: string, color: ColorIndex): void {
   const id = `syn-${nextId++}`
@@ -61,6 +64,21 @@ export function hydrateTerminalEvents(seeds: TerminalEventSeed[]): void {
 
 export function getTerminalEvents(): TerminalEvent[] {
   return ring
+}
+
+export function getEventsSnapshot(): TerminalEvent[] {
+  return snapshot
+}
+
+export function getEventsCount(): number {
+  return snapshot.length
+}
+
+export function subscribeEventsStore(fn: () => void): () => void {
+  listeners.add(fn)
+  return () => {
+    listeners.delete(fn)
+  }
 }
 
 export function subscribeTerminalEvents(fn: () => void): () => void {

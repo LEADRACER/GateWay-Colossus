@@ -7,6 +7,7 @@ import { useTerminalFeed } from '@/hooks/useTerminalFeed'
 import { useTerminalEvents } from '@/hooks/useTerminalEvents'
 import { SHELL } from '@/components/shell/constants'
 import { hydrateTerminalEvents } from './events'
+import { setActiveScene, subscribeRequestedScene, syncUrlScene } from './sceneBus'
 import type { TerminalFeed, TerminalPointer, TerminalScene, TerminalSceneCtx } from './types'
 import { BootScene } from './scenes/BootScene'
 import { RainScene } from './scenes/RainScene'
@@ -124,6 +125,7 @@ export function TerminalGrid() {
       if (next) {
         currentScene = next
         sceneTime = 0
+        setActiveScene(next.name)
       }
     }
 
@@ -131,6 +133,7 @@ export function TerminalGrid() {
       if (!sceneMap.has(name)) return
       currentScene?.destroy?.()
       resetScene(name)
+      syncUrlScene(name)
     }
 
     const advanceScene = () => {
@@ -154,6 +157,10 @@ export function TerminalGrid() {
       }
     }
     resetScene(initialScene ?? 'boot')
+
+    const unsubRequested = subscribeRequestedScene((name) => {
+      if (!cancelled && name !== currentScene?.name) switchScene(name)
+    })
 
     const drawChrome = (buffer: CellBuffer, sceneName: string, now: Date) => {
       const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
@@ -273,6 +280,7 @@ export function TerminalGrid() {
       window.removeEventListener('resize', onResize)
       reducedQuery.removeEventListener('change', onMotionPref)
       canvas.removeEventListener('pointerleave', onPointerLeave)
+      unsubRequested()
     }
   }, [])
 
@@ -284,7 +292,7 @@ export function TerminalGrid() {
     >
       <canvas ref={canvasRef} className="block h-full w-full" />
       <div
-        className="pointer-events-none absolute inset-0 z-10 opacity-40"
+        className="pointer-events-none absolute inset-0 z-10 opacity-20"
         style={{
           background:
             'repeating-linear-gradient(0deg, rgba(0,0,0,0.28) 0px, rgba(0,0,0,0.28) 1px, transparent 1px, transparent 3px)',

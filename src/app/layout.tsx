@@ -4,6 +4,7 @@ import './globals.css'
 import { Header } from '@/components/shell/Header'
 import { Footer } from '@/components/shell/Footer'
 import { TerminalGrid } from '@/components/features/terminal/TerminalGrid'
+import { Statusbar } from '@/components/features/terminal/Statusbar'
 import { ToastProvider } from '@/components/ui/Toast'
 
 export const metadata: Metadata = {
@@ -49,6 +50,7 @@ export default function RootLayout({
           </main>
 
           <Footer />
+          <Statusbar />
         </ToastProvider>
       </body>
     </html>
