@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { useSupabaseSession as useSession } from '@/hooks/useSupabaseSession'
 import { parseGitHubUrl, fetchRepoInfo, fetchReadme } from '@/services/github'
 import type { Project } from '@/lib/types/database'
 import { Button } from '@/components/ui/Button'

@@ -1,14 +1,12 @@
 'use client'
 
-import { Suspense, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
-import { RippleButton } from '@/components/ui/RippleButton'
 import { StatsSection } from '@/components/features/StatsSection'
-import { AdvancedHomepageCanvas } from '@/components/features/home/advanced/AdvancedHomepageCanvas'
-import { HolographicCard, HolographicButton, GlowingText, ScanlineOverlay, GridBackground } from '@/components/ui/HolographicUI'
-import { ScrollReveal, StaggerContainer, Parallax, Floating, TextReveal, LetterReveal, useScrollVelocity, useScrollDirection } from '@/components/ui/ImmersiveTransitions'
+import { HolographicCard, HolographicButton, GlowingText } from '@/components/ui/HolographicUI'
+import { ScrollReveal, StaggerContainer, Parallax, Floating, TextReveal, LetterReveal } from '@/components/ui/ImmersiveTransitions'
 import { Flame, Star, ArrowRight, Sparkles, Zap, Layers, Network } from 'lucide-react'
 import type { Project } from '@/lib/types/database'
 
@@ -18,8 +16,6 @@ export default function HomePage() {
   const [featured, setFeatured] = useState<FeaturedProject[]>([])
   const [trending, setTrending] = useState<Project[]>([])
   const [mounted, setMounted] = useState(false)
-  const scrollVelocity = useScrollVelocity()
-  const scrollDirection = useScrollDirection()
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -55,13 +51,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      <ScanlineOverlay intensity={0.03} speed={4} />
-      <GridBackground color="00d4ff" opacity={0.02} animated={true} />
-      
-      <Suspense fallback={<div className="fixed inset-0 z-0 bg-bg" />}>
-        <AdvancedHomepageCanvas />
-      </Suspense>
-
       <div className="relative z-10 min-h-screen flex flex-col">
         <main className="flex-1 flex flex-col">
           <section className="flex-1 flex items-center relative">

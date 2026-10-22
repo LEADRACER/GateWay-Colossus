@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import { useSession } from 'next-auth/react'
+import { useSupabaseSession as useSession } from '@/hooks/useSupabaseSession'
 import { searchProjects, getDistinctLanguages, countProjects } from '@/services/discovery'
 import { ProjectCard } from '@/components/features/project/ProjectCard'
 import { CategoryNav } from '@/components/ui/CategoryNav'

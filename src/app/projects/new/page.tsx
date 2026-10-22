@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { useSupabaseSession as useSession } from '@/hooks/useSupabaseSession'
 import { NewProjectForm } from '@/components/features/project/NewProjectForm'
 import { Spinner } from '@/components/ui/Spinner'
 

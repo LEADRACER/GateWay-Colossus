@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { useSession } from 'next-auth/react'
+import { useSupabaseSession as useSession } from '@/hooks/useSupabaseSession'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import type { Comment } from '@/lib/types/database'
@@ -22,6 +22,7 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
 
   useEffect(() => {
     loadComments()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
   async function loadComments() {
@@ -102,7 +103,7 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
         <div className="flex gap-3">
           <div className="w-8 h-8 rounded-full bg-surface-alt flex items-center justify-center shrink-0">
             {session?.user?.avatarUrl ? (
-              <Image src={session.user.avatarUrl} alt={session.user.githubLogin} width={32} height={32} className="w-full h-full object-cover rounded-full" />
+              <Image src={session.user?.avatarUrl ?? undefined} alt={session.user?.githubLogin ?? "avatar"} width={32} height={32} className="w-full h-full object-cover rounded-full" />
             ) : (
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-dim">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />

@@ -1,13 +1,14 @@
 'use client'
 
-import { useSession, signOut } from 'next-auth/react'
+import Link from 'next/link'
+import { useSupabaseSession, supabaseSignOut } from '@/hooks/useSupabaseSession'
 import { Button } from '@/components/ui/Button'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/DropdownMenu'
 import { GithubIcon } from '@/components/ui/GithubIcon'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar'
 
 export function UserMenu() {
-  const { data: session, status } = useSession()
+  const { data: session, status } = useSupabaseSession()
 
   if (status === 'loading') {
     return (
@@ -30,7 +31,7 @@ export function UserMenu() {
       <DropdownMenuTrigger>
         <Button variant="ghost" size="sm" className="gap-1.5 h-8 px-2">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={avatarUrl} alt={githubLogin} />
+            <AvatarImage src={avatarUrl ?? undefined} alt={githubLogin ?? undefined} />
             <AvatarFallback>
               <GithubIcon className="w-4 h-4" />
             </AvatarFallback>
@@ -50,24 +51,24 @@ export function UserMenu() {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <a href="/projects/new" className="flex items-center gap-2">
+          <Link href="/projects/new" className="flex items-center gap-2">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
             Add Project
-          </a>
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuItem>
-          <a href="/bookmarks" className="flex items-center gap-2">
+          <Link href="/bookmarks" className="flex items-center gap-2">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
             </svg>
             Bookmarks
-          </a>
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })} className="text-error">
+        <DropdownMenuItem onClick={() => supabaseSignOut('/')} className="text-error">
           Sign Out
         </DropdownMenuItem>
       </DropdownMenuContent>

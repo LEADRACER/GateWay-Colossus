@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useState, useRef, useCallback, useSyncExternalStore } from 'react'
+import { motion, AnimatePresence, type TargetAndTransition } from 'framer-motion'
+
+const noopSubscribe = () => () => {}
 
 interface PageTransitionProps {
   children: React.ReactNode
@@ -14,11 +16,7 @@ export function PageTransition({
   duration = 0.8, 
   ease = [0.4, 0, 0.2, 1] as [number, number, number, number]
 }: PageTransitionProps) {
-  const [isMounted, setIsMounted] = useState(false)
-
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
+  const isMounted = useSyncExternalStore(noopSubscribe, () => true, () => false)
 
   return (
     <AnimatePresence mode="wait">
@@ -56,7 +54,7 @@ export function StaggerContainer({
     <>
       {childArray.map((child, index) => (
         <motion.div
-          key={typeof child === 'object' && child !== null && 'key' in child ? (child as any).key : index}
+          key={(typeof child === 'object' && child !== null && 'key' in child ? (child as { key: React.Key | null }).key : null) ?? `stagger-${index}`}
           initial={{ 
             opacity: 0, 
             y: direction === 'up' ? 30 : direction === 'down' ? -30 : 0,
@@ -125,7 +123,7 @@ export function ScrollReveal({
     return () => observer.disconnect()
   }, [threshold, rootMargin, once])
 
-  const initialStyles: Record<string, any> = {
+  const initialStyles: Record<string, TargetAndTransition> = {
     up: { y: 50, opacity: 0, filter: 'blur(10px)' },
     down: { y: -50, opacity: 0, filter: 'blur(10px)' },
     left: { x: 50, opacity: 0, filter: 'blur(10px)' },
@@ -362,7 +360,7 @@ export function LetterReveal({ children, className = '', delay = 0, stagger = 0.
 export function useScrollVelocity() {
   const [velocity, setVelocity] = useState(0)
   const lastScrollRef = useRef(0)
-  const lastTimeRef = useRef(Date.now())
+  const lastTimeRef = useRef(0)
 
   useEffect(() => {
     const handleScroll = () => {

@@ -12,7 +12,7 @@ import { Modal } from '@/components/ui/Modal'
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer'
 import { LikeButton, BookmarkButton } from '@/components/ui/SocialButtons'
 import { CommentsSection } from '@/components/ui/CommentsSection'
-import { useSession } from 'next-auth/react'
+import { useSupabaseSession as useSession } from '@/hooks/useSupabaseSession'
 
 interface Props {
   id: string

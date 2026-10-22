@@ -5,7 +5,7 @@ import { Plus, Users } from 'lucide-react'
 import Link from 'next/link'
 import { TeamList } from '@/components/features/team/TeamList'
 import { Spinner } from '@/components/ui/Spinner'
-import { useSession } from 'next-auth/react'
+import { useSupabaseSession as useSession } from '@/hooks/useSupabaseSession'
 
 export default function TeamsPage() {
   const { data: session, status } = useSession()

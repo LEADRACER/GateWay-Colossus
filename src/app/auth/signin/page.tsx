@@ -1,21 +1,30 @@
 'use client'
 
 import { useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { signIn } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { GithubIcon } from '@/components/ui/GithubIcon'
 
 function SignInPageContent() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/projects'
 
+  const signInWithGitHub = () => {
+    const supabase = createClient()
+    const redirect = `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackUrl)}`
+    supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: { redirectTo: redirect },
+    })
+  }
+
   useEffect(() => {
-    signIn('github', { callbackUrl })
-  }, [signIn, callbackUrl])
+    signInWithGitHub()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callbackUrl])
 
   return (
     <div className="flex items-center justify-center min-h-[80vh] px-6">
@@ -30,10 +39,10 @@ function SignInPageContent() {
           </div>
           <Spinner size="lg" className="mx-auto" />
           <p className="text-xs text-text-dim">If not redirected, click the button below</p>
-          <Button 
-            variant="secondary" 
-            className="w-full" 
-            onClick={() => signIn('github', { callbackUrl })}
+          <Button
+            variant="secondary"
+            className="w-full"
+            onClick={signInWithGitHub}
           >
             <GithubIcon className="w-4 h-4 mr-2" />
             Continue with GitHub
