@@ -61,10 +61,10 @@ export default function TeamProfilePage() {
   }, [status, code, load])
 
   const { team, members, joinRequests, projects, loading, error } = data
-  const userGithubId = session?.user?.githubId?.toString()
-  const isLeader = session?.user && team && team.leader_id === userGithubId
-  const isAdmin = session?.user && members.some(m => m.user_id === userGithubId && ['leader', 'admin'].includes(m.role))
-  const isMember = session?.user && members.some(m => m.user_id === userGithubId && m.status === 'active')
+  const currentUserId = session?.user?.id
+  const isLeader = Boolean(session?.user && team && team.leader_id === currentUserId)
+  const isAdmin = Boolean(currentUserId && members.some(m => m.user_id === currentUserId && ['leader', 'admin'].includes(m.role)))
+  const isMember = Boolean(currentUserId && members.some(m => m.user_id === currentUserId && m.status === 'active'))
   const pendingRequests = joinRequests.filter(r => r.status === 'pending').length
 
   if (status === 'loading') {
@@ -86,7 +86,7 @@ export default function TeamProfilePage() {
     )
   }
 
-  const pendingMember = isMember ? members.find(m => m.user_id === userGithubId && m.status === 'pending') : null
+  const pendingMember = isMember ? members.find(m => m.user_id === currentUserId && m.status === 'pending') : null
 
   async function act(key: string, fn: () => Promise<Response>, messages: { ok: string }) {
     setBusy(key)
@@ -308,7 +308,7 @@ export default function TeamProfilePage() {
                     </div>
                     <p className="text-xs text-text-dim">{member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '—'}</p>
                   </div>
-                  {(isLeader || isAdmin) && member.user_id !== userGithubId && member.role !== 'leader' && (
+                  {(isLeader || isAdmin) && member.user_id !== currentUserId && member.role !== 'leader' && (
                     <div className="flex items-center gap-2">
                       <select
                         defaultValue={member.role}

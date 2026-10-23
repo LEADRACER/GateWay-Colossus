@@ -273,12 +273,17 @@ export async function fetchRecentEvents(limit = 30): Promise<TerminalEventPrevie
     .order('created_at', { ascending: false })
     .limit(limit)
 
+  // FK-side embeds come back as OBJECTS (older PostgREST returned arrays;
+  // handle both so the terminal feed never renders 'someone - a project')
+  const first = <T>(v: T | T[] | null | undefined): T | null =>
+    Array.isArray(v) ? v[0] ?? null : v ?? null
+
   const rows = (data || []) as unknown as Array<{
     id: string
     action: string
     created_at: string
-    profiles: { username: string | null }[] | null
-    projects: { name: string | null }[] | null
+    profiles: { username: string | null } | { username: string | null }[] | null
+    projects: { name: string | null } | { name: string | null }[] | null
   }>
 
   return rows.map(row => {
@@ -286,8 +291,8 @@ export async function fetchRecentEvents(limit = 30): Promise<TerminalEventPrevie
       id: row.id,
       action: row.action,
       created_at: row.created_at,
-      profiles: row.profiles?.[0] ?? null,
-      projects: row.projects?.[0] ?? null,
+      profiles: first(row.profiles),
+      projects: first(row.projects),
     }
     return {
       id: normalized.id,

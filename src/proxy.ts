@@ -14,6 +14,7 @@ const PUBLIC_PATHS = [
   '/profile',
   '/api/profile',
   '/api/projects',
+  '/api/v1',
 ]
 
 const isPublicPath = (path: string) => {
@@ -44,9 +45,12 @@ export async function proxy(request: NextRequest) {
     if (cookieUpdates.length === 0) return NextResponse.next()
   }
 
-  // Always forward identity headers when we have them — including public API
-  // GETs (like/status, bookmark/status) so authed users are recognized there.
+  // Security: never trust client-supplied identity headers — strip anything
+  // spoofable before any handler sees it. Only our own resolution can set them.
   const requestHeaders = new Headers(request.headers)
+  for (const h of ['x-user-id', 'x-user-login', 'x-user-avatar', 'x-user-email', 'x-auth-id', 'x-github-id']) {
+    requestHeaders.delete(h)
+  }
   if (identity) {
     // x-user-id is the AUTH UUID: every consumer writes it into uuid columns
     // (auth.users/profiles FKs). The GitHub id gets its own header.

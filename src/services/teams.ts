@@ -206,6 +206,7 @@ export async function getUserTeams(
   if (!memberships) return []
 
   return memberships
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map(m => m.team as any)
     .filter(Boolean)
     .map(t => ({
@@ -497,8 +498,8 @@ export async function requestJoin(
     ...data,
     login: data.user?.login,
     avatar_url: data.user?.avatar_url,
-    team_name: data.team?.name,
-    team_code: data.team?.code,
+    team_name: data.project?.team?.name,
+    team_code: data.project?.team?.code,
   } as TeamJoinRequest
 }
 
@@ -575,8 +576,8 @@ export async function acceptJoinRequest(
     ...data,
     login: data.user?.login,
     avatar_url: data.user?.avatar_url,
-    team_name: data.team?.name,
-    team_code: data.team?.code,
+    team_name: data.project?.team?.name,
+    team_code: data.project?.team?.code,
   } as TeamJoinRequest
 }
 
@@ -619,8 +620,8 @@ export async function rejectJoinRequest(
     ...data,
     login: data.user?.login,
     avatar_url: data.user?.avatar_url,
-    team_name: data.team?.name,
-    team_code: data.team?.code,
+    team_name: data.project?.team?.name,
+    team_code: data.project?.team?.code,
   } as TeamJoinRequest
 }
 
@@ -678,6 +679,7 @@ export async function getTeamProjects(
   client: TypedSupabaseClient,
   teamId: string,
   options?: { limit?: number; offset?: number }
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 ): Promise<{ projects: any[]; total: number }> {
   let query = client
     .from('projects')
@@ -743,9 +745,8 @@ export async function createShowcaseRequest(
     })
     .select(`
       *,
-      project:projects!project_id(name, owner, repo_name),
-      requester:profiles!requested_by(login),
-      team:teams!projects(team_id, name, code)
+      project:projects!project_id(name, owner, repo_name, team:teams(name, code)),
+      requester:profiles!requested_by(login)
     `)
     .single()
 
@@ -759,8 +760,8 @@ export async function createShowcaseRequest(
     project_name: data.project?.name,
     project_owner: data.project?.owner,
     requester_login: data.requester?.login,
-    team_name: data.team?.name,
-    team_code: data.team?.code,
+    team_name: data.project?.team?.name,
+    team_code: data.project?.team?.code,
   } as ShowcaseRequest
 }
 
@@ -772,9 +773,8 @@ export async function getShowcaseRequests(
     .from('showcase_requests')
     .select(`
       *,
-      project:projects!project_id(name, owner, repo_name),
-      requester:profiles!requested_by(login),
-      team:teams!projects(team_id, name, code)
+      project:projects!project_id(name, owner, repo_name, team:teams(name, code)),
+      requester:profiles!requested_by(login)
     `, { count: 'exact' })
     .order('created_at', { ascending: false })
 
@@ -838,9 +838,8 @@ export async function reviewShowcaseRequest(
     .eq('id', requestId)
     .select(`
       *,
-      project:projects!project_id(name, owner, repo_name),
-      requester:profiles!requested_by(login),
-      team:teams!projects(team_id, name, code)
+      project:projects!project_id(name, owner, repo_name, team:teams(name, code)),
+      requester:profiles!requested_by(login)
     `)
     .single()
 
@@ -851,8 +850,8 @@ export async function reviewShowcaseRequest(
     project_name: data.project?.name,
     project_owner: data.project?.owner,
     requester_login: data.requester?.login,
-    team_name: data.team?.name,
-    team_code: data.team?.code,
+    team_name: data.project?.team?.name,
+    team_code: data.project?.team?.code,
   } as ShowcaseRequest
 }
 

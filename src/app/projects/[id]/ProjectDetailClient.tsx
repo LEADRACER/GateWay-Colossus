@@ -62,7 +62,7 @@ export function ProjectDetailClient({ id }: Props) {
     }
   }, [load, status])
 
-  const isOwner = session?.user?.githubId && String(session.user.githubId) === project?.created_by
+  const isOwner = Boolean(session?.user?.id && project?.created_by && session.user.id === project.created_by)
 
   const [mountTime, setMountTime] = useState(() => Date.now())
   const cachedAt = project?.cached_at

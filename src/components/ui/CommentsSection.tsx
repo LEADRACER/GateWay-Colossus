@@ -158,7 +158,7 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
                       month: 'short', day: 'numeric', year: 'numeric'
                     })}
                   </span>
-                  {session?.user?.githubId && String(session.user.githubId) === comment.user_id && (
+                  {session?.user?.id && session.user.id === comment.user_id && (
                     <button
                       onClick={() => handleDelete(comment.id)}
                       className="ml-auto text-xs text-text-dim hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"

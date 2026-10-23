@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('q') || ''
   const language = searchParams.get('language') || undefined
-  const status = searchParams.get('status') || 'active'
+  const status = searchParams.get('status') || undefined
   const category = searchParams.get('category') || undefined
 
   const supabase = await createServerSupabaseClient()
@@ -13,7 +13,8 @@ export async function GET(request: Request) {
   let dbQuery = supabase
     .from('projects')
     .select('id', { count: 'exact', head: true })
-    .eq('status', status)
+
+  if (status) dbQuery = dbQuery.eq('status', status)
 
   if (category) {
     const { data: cat } = await supabase.from('categories').select('id').eq('slug', category).single()
@@ -29,9 +30,11 @@ export async function GET(request: Request) {
     }
   }
 
-  if (query) {
+  const safeQuery = query.slice(0, 60).replace(/[(),\s.]/g, ' ').trim()
+
+  if (safeQuery) {
     dbQuery = dbQuery.or(
-      `name.ilike.%${query}%,repo_description.ilike.%${query}%,owner.ilike.%${query}%,repo_name.ilike.%${query}%`
+      `name.ilike.%${safeQuery}%,repo_description.ilike.%${safeQuery}%,owner.ilike.%${safeQuery}%,repo_name.ilike.%${safeQuery}%`
     )
   }
 

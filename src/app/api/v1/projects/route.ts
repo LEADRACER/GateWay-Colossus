@@ -34,13 +34,25 @@ async function authenticateAPIKey(request: NextRequest) {
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   const keyHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 
+  // api_keys is owner-RLS locked — look it up via security-definer rpc
   const supabase = await createServerSupabaseClient()
-  const { data: apiKey } = await supabase
-    .from('api_keys')
-    .select('*')
-    .eq('key_hash', keyHash)
-    .eq('is_active', true)
-    .single()
+  const { data: found } = await supabase.rpc('lookup_api_key', { p_hash: keyHash }).single()
+
+  const apiKey = (found as {
+    key_id: string
+    key_user_id: string
+    key_name: string | null
+    key_scopes: string[] | null
+    key_rate_limit: number | null
+    key_expires_at: string | null
+  } | null) ? {
+    id: (found as { key_id: string }).key_id,
+    user_id: (found as { key_user_id: string }).key_user_id,
+    name: (found as { key_name: string | null }).key_name,
+    scopes: (found as { key_scopes: string[] | null }).key_scopes,
+    rate_limit: (found as { key_rate_limit: number | null }).key_rate_limit ?? 100,
+    expires_at: (found as { key_expires_at: string | null }).key_expires_at,
+  } : null
 
   if (!apiKey) return null
 
@@ -51,11 +63,8 @@ async function authenticateAPIKey(request: NextRequest) {
   const allowed = checkRateLimit(apiKey.id, apiKey.rate_limit)
   if (!allowed) return { error: 'Rate limit exceeded', status: 429 }
 
-  // Update last_used
-  await supabase
-    .from('api_keys')
-    .update({ last_used_at: new Date().toISOString() })
-    .eq('id', apiKey.id)
+  // Update last_used (security-definer touch)
+  await supabase.rpc('touch_api_key', { p_key_id: apiKey.id })
 
   return apiKey
 }
@@ -67,8 +76,8 @@ export async function GET(request: NextRequest) {
   if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  if (auth.error) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status })
+  if (auth && 'error' in auth) {
+    return NextResponse.json({ error: (auth as { error: string }).error }, { status: (auth as { status: number }).status })
   }
 
   const supabase = await createServerSupabaseClient()

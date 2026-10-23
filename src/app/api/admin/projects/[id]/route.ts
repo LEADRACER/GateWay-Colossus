@@ -15,7 +15,7 @@ export async function PATCH(
   }
 
   try {
-    await moderateProject(admin.supabase, id, action as 'approve' | 'reject', admin.githubId)
+    await moderateProject(admin.supabase, id, action as 'approve' | 'reject', admin.userId)
     return NextResponse.json({ success: true })
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Failed to moderate'

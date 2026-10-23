@@ -37,6 +37,9 @@ export async function POST(
   if (!targetLogin?.trim()) {
     return NextResponse.json({ error: 'GitHub username required' }, { status: 400 })
   }
+  if (role && !['member', 'admin'].includes(role)) {
+    return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
+  }
 
   const supabase = await createServerSupabaseClient()
 
@@ -50,7 +53,7 @@ export async function POST(
     const { data: targetUser } = await supabase
       .from('profiles')
       .select('id')
-      .eq('login', targetLogin.toLowerCase())
+      .ilike('login', targetLogin)
       .single()
 
     if (!targetUser) {

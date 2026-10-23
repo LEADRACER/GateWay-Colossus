@@ -7,7 +7,13 @@ export async function PATCH(
   { params }: { params: Promise<{ userId: string }> },
 ) {
   const { userId } = await params
-  const { role } = await request.json()
+  const parsed = await request.json().catch(() => null) as { role?: string } | null
+  if (!parsed) return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  const { role } = parsed as { role?: string }
+
+  if (role !== 'admin' && role !== 'member' && role !== 'viewer') {
+    return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
+  }
 
   const admin = await requireAdmin()
   if (!admin) {

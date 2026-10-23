@@ -31,11 +31,11 @@ export async function PATCH(
         return NextResponse.json({ error: 'Request not found' }, { status: 404 })
       }
 
-      await revokeShowcase(admin.supabase, req.project_id, admin.githubId)
+      await revokeShowcase(admin.supabase, req.project_id, admin.userId)
       return NextResponse.json({ success: true })
     }
 
-    const result = await reviewShowcaseRequest(admin.supabase, id, admin.githubId, action, adminNotes)
+    const result = await reviewShowcaseRequest(admin.supabase, id, admin.userId, action, adminNotes)
     return NextResponse.json(result)
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Failed to review request'

@@ -66,24 +66,12 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', project_id)
 
-    // Update README if we got one
+    // Update README: 003 added projects.repo_readme (no separate table)
     if (readme) {
-      const { data: existingReadme } = await supabase
-        .from('project_readme')
-        .select('id')
-        .eq('project_id', project_id)
-        .maybeSingle()
-
-      if (existingReadme) {
-        await supabase
-          .from('project_readme')
-          .update({ content: readme })
-          .eq('project_id', project_id)
-      } else {
-        await supabase
-          .from('project_readme')
-          .insert({ project_id, content: readme })
-      }
+      await supabase
+        .from('projects')
+        .update({ repo_readme: readme })
+        .eq('id', project_id)
     }
 
     if (updateErr) throw updateErr
@@ -108,7 +96,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'An error occurred'
-    // Log failed sync
+    // Log failed sync (best-effort; sync_jobs created in 0010)
     await supabase.from('sync_jobs').insert({
       user_id: user.id,
       sync_type: 'github_sync',

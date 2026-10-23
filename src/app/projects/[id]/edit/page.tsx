@@ -29,7 +29,7 @@ export default function EditProjectPage() {
           return
         }
         const p = await response.json()
-        if (session?.user?.githubId && String(session.user.githubId) !== p.created_by) {
+        if (!session?.user?.id || session.user.id !== p.created_by) {
           router.push(`/projects/${id}`)
           return
         }

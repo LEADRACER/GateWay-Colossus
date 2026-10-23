@@ -47,7 +47,7 @@ export default function TeamMembersPage() {
     if (status !== 'loading') load()
   }, [status, code, load])
 
-  const currentUserId = session?.user?.githubId?.toString()
+  const currentUserId = session?.user?.id
   const currentMember = members.find(m => m.user_id === currentUserId)
   const isLeader = currentMember?.role === 'leader'
   const isAdmin = ['leader', 'admin'].includes(currentMember?.role || '')
