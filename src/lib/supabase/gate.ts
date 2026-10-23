@@ -1,5 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import {
+  SESSION_COOKIE_MAX_AGE,
+  SESSION_REFRESH_MARGIN_SECONDS,
+  SECURE_COOKIES,
+} from '@/lib/supabase/cookies'
 
 export interface AuthIdentity {
   userId: string
@@ -38,8 +43,16 @@ export function resolveAuth(request: NextRequest): Promise<AuthResolution> {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options)
-            cookieUpdates.push({ name, value, options })
+            const hardened = {
+              ...options,
+              httpOnly: false as const, // browser client must be able to read+refresh
+              path: '/',
+              sameSite: 'lax' as const,
+              secure: SECURE_COOKIES,
+              maxAge: SESSION_COOKIE_MAX_AGE,
+            }
+            response.cookies.set(name, value, hardened)
+            cookieUpdates.push({ name, value, options: hardened })
           })
         },
       },
@@ -48,6 +61,22 @@ export function resolveAuth(request: NextRequest): Promise<AuthResolution> {
 
   return (async () => {
     try {
+      // Sliding session: if the access token is gone or about to die,
+      // rotate it from the refresh token while we are already here.
+      // (browser tabs refresh on their own; this covers the
+      //  "close the laptop, come back next week" path on any request)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        const expiresAt = session.expires_at
+        if (
+          expiresAt != null &&
+          expiresAt - Math.floor(Date.now() / 1000) < SESSION_REFRESH_MARGIN_SECONDS
+        ) {
+          await supabase.auth.refreshSession()
+          // Rotated cookies flow through setAll (same adapter) — no manual write needed.
+        }
+      }
+
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return { response, identity: null, cookieUpdates }
 
