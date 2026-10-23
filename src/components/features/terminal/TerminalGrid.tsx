@@ -30,6 +30,7 @@ interface Metrics {
   originX: number
   originY: number
   fontSize: number
+  dpr: number
 }
 
 function bootScene(
@@ -75,17 +76,13 @@ export function TerminalGrid() {
 
     let cancelled = false
     let raf = 0
-    let metrics: Metrics = { charW: 9, cellH: 21, cols: 0, rows: 0, originX: 0, originY: 0, fontSize: FONT_SIZE_DESKTOP }
+    let metrics: Metrics = { charW: 9, cellH: 21, cols: 0, rows: 0, originX: 0, originY: 0, fontSize: FONT_SIZE_DESKTOP, dpr: 1 }
     const pointer: TerminalPointer = { col: 0, row: 0, present: false }
     const sceneMap = new Map(SCENES.map((s) => [s.name, s]))
     let currentScene: TerminalScene | null = null
     let sceneTime = 0
     let lastFrame = performance.now()
     let reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-    const prevChars: string[] = []
-    const prevFg: number[] = []
-    const prevBg: number[] = []
 
     const measure = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -113,10 +110,10 @@ export function TerminalGrid() {
         originX: Math.floor((vw - cols * charW) / 2),
         originY: topInset + Math.floor((vh - topInset - bottomInset - rows * cellH) / 2),
         fontSize,
+        dpr,
       }
       ctx.fillStyle = PAL[C.BG]
       ctx.fillRect(0, 0, canvas.width, canvas.height)
-      prevChars.length = 0
     }
 
     const resetScene = (name: string) => {
@@ -203,38 +200,28 @@ export function TerminalGrid() {
 
       drawChrome(buffer, currentScene?.name ?? 'boot', wall)
 
-      const size = buffer.size
-      if (prevChars.length !== size) {
-        prevChars.length = size
-        prevFg.length = size
-        prevBg.length = size
-        for (let i = 0; i < size; i++) {
-          prevChars[i] = '~'
-          prevFg[i] = -1
-          prevBg[i] = -1
-        }
-      }
-
       const { originX, originY, cellH, cols, rows } = metrics
+      // Full clear + full redraw every frame. A dirty-cell diff cache is not
+      // viable here: wide glyphs (★ █ ─ ♥) and descenders bleed past their cell
+      // rect, so skipped cells would leave permanent ink smears across scene
+      // switches. Background is uniform, so one fillRect wipes everything.
+      ctx.fillStyle = PAL[C.BG]
+      ctx.fillRect(0, 0, canvas.width / metrics.dpr, canvas.height / metrics.dpr)
+
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
           const i = y * cols + x
           const ch = buffer.chars[i]
-          const fg = buffer.fg[i]
-          const bg = buffer.bg[i]
-          if (ch === prevChars[i] && fg === prevFg[i] && bg === prevBg[i]) continue
-
+          if (!ch || ch === ' ') continue
           const px = originX + Math.round(x * metrics.charW)
           const py = originY + y * cellH
-          ctx.fillStyle = PAL[bg] ?? PAL[C.BG]
-          ctx.fillRect(px - 1, py, Math.ceil(metrics.charW) + 1, cellH)
-          if (ch && ch !== ' ') {
-            ctx.fillStyle = PAL[fg] ?? PAL[C.FG]
-            ctx.fillText(ch, px, py + 2)
+          const cellBg = buffer.bg[i]
+          if (cellBg !== C.BG) {
+            ctx.fillStyle = PAL[cellBg] ?? PAL[C.BG]
+            ctx.fillRect(px - 1, py, Math.ceil(metrics.charW) + 1, cellH)
           }
-          prevChars[i] = ch
-          prevFg[i] = fg
-          prevBg[i] = bg
+          ctx.fillStyle = PAL[buffer.fg[i]] ?? PAL[C.FG]
+          ctx.fillText(ch, px, py + 2)
         }
       }
     }
