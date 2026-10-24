@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { buildDownloadUrl, buildVisitUrl, fetchRepoInfo, fetchReadme } from '@/services/github'
@@ -27,6 +27,8 @@ export function ProjectDetailClient({ id }: Props) {
   const [error, setError] = useState('')
   const [showDelete, setShowDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [showcaseState, setShowcaseState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [showcaseError, setShowcaseError] = useState('')
   const [liveReadme, setLiveReadme] = useState<string | null>(null)
   const [liveReadmeLoading, setLiveReadmeLoading] = useState(false)
 
@@ -58,13 +60,14 @@ export function ProjectDetailClient({ id }: Props) {
 
   useEffect(() => {
     if (status !== 'loading') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       load()
     }
   }, [load, status])
 
   const isOwner = Boolean(session?.user?.id && project?.created_by && session.user.id === project.created_by)
 
-  const [mountTime, setMountTime] = useState(() => Date.now())
+  const [mountTime] = useState(() => Date.now())
   const cachedAt = project?.cached_at
 
   const cacheAge = useMemo(() => {
@@ -146,6 +149,26 @@ export function ProjectDetailClient({ id }: Props) {
       setProject(updated)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'An error occurred')
+    }
+  }
+
+  async function handleRequestShowcase() {
+    setShowcaseState('sending')
+    setShowcaseError('')
+    try {
+      const response = await fetch(`/api/projects/${id}/showcase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'homepage' }),
+      })
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to request showcase')
+      }
+      setShowcaseState('sent')
+    } catch (e: unknown) {
+      setShowcaseState('error')
+      setShowcaseError(e instanceof Error ? e.message : 'An error occurred')
     }
   }
 
@@ -331,7 +354,22 @@ export function ProjectDetailClient({ id }: Props) {
             >
               {project.status === 'active' ? 'Archive' : 'Set Active'}
             </Button>
-            <Button variant="danger" size="sm" onClick={() => setShowDelete(true)}>
+            {project.is_showcased ? (
+            <span className="inline-flex items-center gap-1.5 h-8 px-3 border border-gold/40 bg-gold-subtle text-gold font-mono text-xs">
+              ★ showcased
+            </span>
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleRequestShowcase}
+              disabled={showcaseState === 'sending' || showcaseState === 'sent'}
+              loading={showcaseState === 'sending'}
+            >
+              {showcaseState === 'sent' ? '✓ request sent' : 'Request Showcase'}
+            </Button>
+          )}
+          <Button variant="danger" size="sm" onClick={() => setShowDelete(true)}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -341,6 +379,10 @@ export function ProjectDetailClient({ id }: Props) {
           </div>
         )}
       </div>
+
+      {showcaseState === 'error' && showcaseError && (
+        <p className="mt-2 px-1 font-mono text-xs text-error">{showcaseError}</p>
+      )}
 
       <CommentsSection projectId={id} />
 

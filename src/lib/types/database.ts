@@ -29,6 +29,7 @@ export interface Project {
   created_by_avatar?: string
   team_id?: string
   is_team_project: boolean
+  is_showcased?: boolean
   cached_at?: string
   created_at: string
   updated_at: string

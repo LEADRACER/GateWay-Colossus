@@ -44,10 +44,22 @@ export async function PATCH(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  // Whitelist columns + validate status — a client must not set
+  // team_id / is_showcased / created_by here
   const body = await request.json()
+  const updates: Record<string, unknown> = {
+    cached_at: new Date().toISOString(),
+  }
+  for (const key of ['name', 'github_url', 'owner', 'repo_name', 'repo_description', 'repo_readme', 'repo_language', 'repo_topics', 'repo_stars', 'repo_license', 'repo_avatar', 'status'] as const) {
+    if (key in body) updates[key] = body[key]
+  }
+  if (typeof updates.status === 'string' && !['active', 'archived', 'in development'].includes(updates.status)) {
+    return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+  }
+
   const { data, error } = await supabase
     .from('projects')
-    .update({ ...body, cached_at: new Date().toISOString() })
+    .update(updates)
     .eq('id', id)
     .select()
     .single()

@@ -87,7 +87,8 @@ export default function ProjectsPage() {
     if (session?.user) {
       setUserRole(session.user.role || null) // eslint-disable-line react-hooks/set-state-in-effect
       if (!session.user.role) {
-        fetch(`/api/user/role?githubId=${session.user.githubId}`)
+        // session.user.id is the auth uuid (githubId can be null)
+        fetch(`/api/user/role?id=${session.user.id}`)
           .then(res => res.json())
           .then(data => {
             if (data.role) setUserRole(data.role)
@@ -176,7 +177,9 @@ export default function ProjectsPage() {
             >
               + {COPY.nav.newProject.toLowerCase()}
             </Link>
-          ) : userRole === 'member' ? (
+          ) : userRole === 'viewer' || userRole === 'member' ? (
+            // viewers and members without the add-flag are exactly the
+            // audience the permission-grant flow upgrades
             <RequestPermissionButton />
           ) : null}
           <div className="relative">

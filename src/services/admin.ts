@@ -223,9 +223,15 @@ export async function handlePermissionRequest(
     .eq('id', requestId)
   if (updateErr) throw new Error(updateErr.message)
 
-  // If approved, grant permission
+  // If approved, grant permission. can-add-project also requires the member
+  // role, so promote viewers — granting the flag alone was a dead grant.
   if (action === 'approve') {
     await toggleCanAddProject(client, req.user_id, true)
+    await client
+      .from('profiles')
+      .update({ role: 'member' })
+      .eq('id', req.user_id)
+      .eq('role', 'viewer')
   }
 }
 
