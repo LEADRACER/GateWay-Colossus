@@ -19,7 +19,7 @@ export async function GET(
     .select('id')
     .eq('project_id', id)
     .eq('user_id', userId)
-    .single()
+    .maybeSingle()
 
   return NextResponse.json({ liked: !!data })
 }

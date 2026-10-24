@@ -25,13 +25,17 @@ export function UserMenu() {
   }
 
   const { githubLogin, avatarUrl } = session.user
+  // github headers may be absent if the oauth step was skipped; don't render a
+  // broken github.com/<empty> link or "@undefined" in that case
+  const login = githubLogin || session.user.id.slice(0, 8)
+  const hasGithub = Boolean(githubLogin) && Boolean(avatarUrl)
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
         <Button variant="ghost" size="sm" className="gap-1.5 h-8 px-2">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={avatarUrl ?? undefined} alt={githubLogin ?? undefined} />
+            <AvatarImage src={avatarUrl ?? undefined} alt={login} />
             <AvatarFallback>
               <GithubIcon className="w-4 h-4" />
             </AvatarFallback>
@@ -40,15 +44,17 @@ export function UserMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent sideOffset={8} className="w-48">
         <div className="px-3 py-2 border-b border-border">
-          <p className="text-sm font-medium text-text">{githubLogin}</p>
-          <p className="text-xs text-text-dim">@{githubLogin}</p>
+          <p className="text-sm font-medium text-text">{login}</p>
+          <p className="text-xs text-text-dim">{hasGithub ? `@${githubLogin}` : 'signed in'}</p>
         </div>
-        <DropdownMenuItem>
-          <a href={`https://github.com/${githubLogin}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-            <GithubIcon className="w-4 h-4" />
-            View GitHub Profile
-          </a>
-        </DropdownMenuItem>
+        {hasGithub && (
+          <DropdownMenuItem>
+            <a href={`https://github.com/${githubLogin}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+              <GithubIcon className="w-4 h-4" />
+              View GitHub Profile
+            </a>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem>
           <Link href="/projects/new" className="flex items-center gap-2">

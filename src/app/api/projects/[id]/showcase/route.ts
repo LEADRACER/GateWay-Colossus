@@ -8,11 +8,14 @@ export async function POST(
 ) {
   const { id } = await params
   const userId = request.headers.get('x-user-id')
-  const { type } = await request.json()
 
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const body = await request.json().catch(() => null)
+  if (!body) return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  const { type } = body as { type?: 'homepage' | 'fired' | 'both' }
   if (!type || !['homepage', 'fired', 'both'].includes(type)) {
     return NextResponse.json({ error: 'Invalid showcase type' }, { status: 400 })
   }

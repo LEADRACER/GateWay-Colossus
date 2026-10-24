@@ -9,7 +9,13 @@ export async function GET(
   const { id } = await params
   const supabase = await createServerSupabaseClient()
 
-  const comments = await getComments(supabase, id)
+  let comments: Awaited<ReturnType<typeof getComments>>
+  try {
+    comments = await getComments(supabase, id)
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Failed to load comments'
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
 
   // Enrich with author identity in ONE embed query instead of N per-comment
   // lookups. Comments.user_id is an auth uuid; profiles.id matches it.

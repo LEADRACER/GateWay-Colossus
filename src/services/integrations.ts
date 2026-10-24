@@ -1,5 +1,15 @@
 import type { TypedSupabaseClient } from '@/lib/supabase/client'
 
+// CSPRNG via Web Crypto — Math.random is predictable and must never guard
+// credentials. 32 bytes url-safe base64; optional human-readable prefix.
+function generateSecureToken(prefix = ''): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789'
+  const body = Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('')
+  return prefix + body
+}
+
 const TABLE = 'api_keys'
 
 export interface APIKey {
@@ -38,9 +48,7 @@ export async function createAPIKey(
   if (!user) throw new Error('You must be logged in')
 
   // Generate a random API key
-  const rawKey = 'gwc_' + Array.from({ length: 32 }, () =>
-    'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]
-  ).join('')
+  const rawKey = generateSecureToken('gwc_')
 
   // Hash the key for storage (simple hash — in production use bcrypt)
   const keyHash = await hashKey(rawKey)
@@ -109,9 +117,7 @@ export async function createWebhook(
   if (!user) throw new Error('You must be logged in')
 
   // Generate webhook secret
-  const secret = Array.from({ length: 32 }, () =>
-    'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]
-  ).join('')
+  const secret = generateSecureToken()
 
   const { data, error } = await client
     .from(WEBHOOK_TABLE)
@@ -220,57 +226,6 @@ export async function deliverWebhook(
     const durationMs = Date.now() - start
     return { success: false, durationMs, statusCode: 0 }
   }
-}
-
-export async function retryWebhookDelivery(
-  client: TypedSupabaseClient,
-  deliveryId: string
-): Promise<{ success: boolean; statusCode?: number }> {
-  // Get the failed delivery
-  const { data: delivery, error: delErr } = await client
-    .from('webhook_deliveries')
-    .select('*')
-    .eq('id', deliveryId)
-    .single()
-
-  if (delErr || !delivery) throw new Error('Delivery not found')
-
-  // Get the associated webhook
-  const { data: webhook, error: whErr } = await client
-    .from(WEBHOOK_TABLE)
-    .select('*')
-    .eq('id', delivery.webhook_id)
-    .single()
-
-  if (whErr || !webhook) throw new Error('Webhook not found')
-  if (!webhook.is_active) throw new Error('Webhook is disabled')
-
-  // Re-deliver
-  const result = await deliverWebhook(webhook as Webhook, delivery.event, delivery.payload)
-
-  // Log the new delivery
-  await client.from('webhook_deliveries').insert({
-    webhook_id: delivery.webhook_id,
-    event: delivery.event,
-    payload: delivery.payload,
-    status_code: result.statusCode,
-    response_body: result.responseBody,
-    duration_ms: result.durationMs,
-    success: result.success,
-  })
-
-  // Update webhook status
-  const newFailureCount = result.success ? 0 : webhook.failure_count + 1
-  await client
-    .from(WEBHOOK_TABLE)
-    .update({
-      last_triggered_at: new Date().toISOString(),
-      last_status: result.statusCode,
-      failure_count: newFailureCount,
-    })
-    .eq('id', delivery.webhook_id)
-
-  return { success: result.success, statusCode: result.statusCode }
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────

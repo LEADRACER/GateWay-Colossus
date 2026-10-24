@@ -7,6 +7,9 @@ export async function PATCH(
   { params }: { params: Promise<{ userId: string }> },
 ) {
   const { userId } = await params
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+    return NextResponse.json({ error: 'Invalid user id' }, { status: 400 })
+  }
   const parsed = await request.json().catch(() => null) as { role?: string } | null
   if (!parsed) return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   const { role } = parsed as { role?: string }

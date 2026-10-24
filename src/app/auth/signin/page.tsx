@@ -11,6 +11,7 @@ import { GithubIcon } from '@/components/ui/GithubIcon'
 function SignInPageContent() {
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/projects'
+  const authError = searchParams.get('error')
 
   const signInWithGitHub = () => {
     const supabase = createClient()
@@ -22,6 +23,9 @@ function SignInPageContent() {
   }
 
   useEffect(() => {
+    // Skip auto-fire when the callback bounced us back with an error —
+    // otherwise a persistent OAuth failure becomes an infinite redirect loop
+    if (authError) return
     signInWithGitHub()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callbackUrl])
@@ -35,9 +39,16 @@ function SignInPageContent() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-text">Sign in with GitHub</h1>
-            <p className="text-sm text-text-dim mt-1">Redirecting you to GitHub...</p>
+            {authError ? (
+              <>
+                <p className="text-sm text-error mt-2 px-2 break-words">{decodeURIComponent(authError)}</p>
+                <p className="text-xs text-text-dim mt-1">Try again below.</p>
+              </>
+            ) : (
+              <p className="text-sm text-text-dim mt-1">Redirecting you to GitHub…</p>
+            )}
           </div>
-          <Spinner size="lg" className="mx-auto" />
+          {!authError && <Spinner size="lg" className="mx-auto" />}
           <p className="text-xs text-text-dim">If not redirected, click the button below</p>
           <Button
             variant="secondary"

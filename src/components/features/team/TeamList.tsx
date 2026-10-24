@@ -19,6 +19,7 @@ export function TeamList({ initialTeams = [], initialTotal = 0, searchable = tru
   const [teams, setTeams] = useState<Team[]>(initialTeams)
   const [total, setTotal] = useState(initialTotal)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -38,6 +39,7 @@ export function TeamList({ initialTeams = [], initialTotal = 0, searchable = tru
 
   const load = useCallback(async () => {
     setLoading(true)
+    setError('')
     try {
       const params = new URLSearchParams()
       if (debouncedSearch) params.set('search', debouncedSearch)
@@ -45,13 +47,12 @@ export function TeamList({ initialTeams = [], initialTotal = 0, searchable = tru
       params.set('offset', String((page - 1) * PAGE_SIZE))
 
       const response = await fetch(`/api/teams?${params.toString()}`)
-      if (response.ok) {
-        const data = await response.json()
-        setTeams(data.teams)
-        setTotal(data.total)
-      }
-    } catch {
-      // silently fail
+      if (!response.ok) throw new Error(`Failed to load teams (${response.status})`)
+      const data = await response.json()
+      setTeams(Array.isArray(data.teams) ? data.teams : [])
+      setTotal(typeof data.total === 'number' ? data.total : 0)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load teams')
     } finally {
       setLoading(false)
     }
@@ -107,7 +108,9 @@ export function TeamList({ initialTeams = [], initialTotal = 0, searchable = tru
         </div>
       )}
 
-      {teams.length === 0 ? (
+      {error ? (
+        <EmptyState title="Something went wrong" description={error} />
+      ) : teams.length === 0 ? (
         <EmptyState
           title={debouncedSearch ? 'No teams found' : 'No teams yet'}
           description={debouncedSearch ? 'Try adjusting your search.' : 'Be the first to create a team.'}

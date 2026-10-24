@@ -25,7 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
-import { ToastProvider, useToast } from '@/components/ui/Toast'
+import { useToast } from '@/components/ui/Toast'
 import { Stagger, StaggerRow, FadeIn, CountUp } from '@/components/motion'
 import { useTerminalFeed } from '@/hooks/useTerminalFeed'
 import { useTerminalEvents } from '@/hooks/useTerminalEvents'
@@ -284,10 +284,8 @@ function ShelfBody() {
   )
 }
 
+// root layout already provides ToastProvider — nesting here would shadow the
+// global context and break toasts fired by components outside this page
 export default function UIShelfPage() {
-  return (
-    <ToastProvider>
-      <ShelfBody />
-    </ToastProvider>
-  )
+  return <ShelfBody />
 }

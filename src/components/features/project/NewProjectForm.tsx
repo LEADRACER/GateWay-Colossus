@@ -17,7 +17,7 @@ export function NewProjectForm() {
     description: string | null
     readme: string | null
     language: string | null
-    topics: string[]
+    topics?: string[] | null
     stars: number
     license: string | null
     owner: string
@@ -77,7 +77,7 @@ export function NewProjectForm() {
           repo_description: preview.description || undefined,
           repo_readme: preview.readme || undefined,
           repo_language: preview.language || undefined,
-          repo_topics: preview.topics,
+          repo_topics: preview.topics ?? [],
           repo_stars: preview.stars,
           repo_license: preview.license || undefined,
           repo_avatar: preview.avatar,
@@ -153,9 +153,9 @@ export function NewProjectForm() {
             )}
           </div>
 
-          {preview.topics.length > 0 && (
+          {(preview.topics ?? []).length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {preview.topics.map((topic) => (
+              {(preview.topics ?? []).map((topic) => (
                 <span
                   key={topic}
                   className="px-2 py-0.5 text-[11px] rounded-full border border-accent/20 bg-accent-subtle text-accent/90"

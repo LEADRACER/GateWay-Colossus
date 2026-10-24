@@ -19,7 +19,7 @@ export function LikeButton({ project, onCountChange, size = 'md' }: LikeButtonPr
   const iconSize = size === 'sm' ? 14 : 16
 
   useEffect(() => {
-    if (!session?.user?.githubId) return
+    if (!session?.user) return
     const checkLike = async () => {
       try {
         const response = await fetch(`/api/projects/${project.id}/like/status`)
@@ -32,7 +32,7 @@ export function LikeButton({ project, onCountChange, size = 'md' }: LikeButtonPr
       }
     }
     checkLike()
-  }, [project.id, session?.user?.githubId])
+  }, [project.id, session?.user])
 
   async function handleToggle() {
     if (!session?.user) return
@@ -102,7 +102,7 @@ export function BookmarkButton({ project, size = 'md' }: BookmarkButtonProps) {
   const iconSize = size === 'sm' ? 14 : 16
 
   useEffect(() => {
-    if (!session?.user?.githubId) return
+    if (!session?.user) return
     const check = async () => {
       try {
         const response = await fetch(`/api/projects/${project.id}/bookmark/status`)
@@ -115,7 +115,7 @@ export function BookmarkButton({ project, size = 'md' }: BookmarkButtonProps) {
       }
     }
     check()
-  }, [project.id, session?.user?.githubId])
+  }, [project.id, session?.user])
 
   async function handleToggle() {
     if (!session?.user) return

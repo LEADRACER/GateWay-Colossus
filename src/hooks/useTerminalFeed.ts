@@ -1,7 +1,12 @@
 import useSWR from 'swr'
+import { useMemo } from 'react'
 import type { TerminalFeed } from '@/components/features/terminal/types'
 
-const fetcher = (url: string): Promise<TerminalFeed> => fetch(url).then((res) => res.json())
+const fetcher = async (url: string): Promise<TerminalFeed> => {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`feed request failed (${res.status})`)
+  return res.json()
+}
 
 const LANGS = ['TypeScript', 'Rust', 'Go', 'Python', 'C++', 'Svelte']
 const NAMES = [
@@ -58,6 +63,11 @@ export function useTerminalFeed(): { feed: TerminalFeed | null; isLoading: boole
     dedupingInterval: 60000,
     refreshInterval: 0,
   })
-  const wantDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo')
-  return { feed: wantDemo ? demoFeed() : data ?? null, isLoading, error }
+  // stable per-navigation, not per-render
+  const wantDemo = useMemo(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo'),
+    [],
+  )
+  const demo = useMemo(() => (wantDemo ? demoFeed() : null), [wantDemo])
+  return { feed: demo ?? data ?? null, isLoading, error }
 }

@@ -1,20 +1,9 @@
 import type { TypedSupabaseClient } from '@/lib/supabase/client'
-import type { Team, TeamMember, TeamJoinRequest, ShowcaseRequest, TeamRole, TeamMemberStatus, JoinRequestStatus } from '@/lib/types/database'
+import type { Team, TeamMember, TeamJoinRequest, ShowcaseRequest, TeamRole , JoinRequestStatus } from '@/lib/types/database'
 
 // ============================================================
 // HELPERS
 // ============================================================
-
-function teamColor(name: string): string {
-  const hash = Array.from(name).reduce((a, c) => a + c.charCodeAt(0), 0)
-  const hue = (hash * 137) % 360
-  return `hsl(${hue}, 70%, 55%)`
-}
-
-function generateSlug(name: string, code: string): string {
-  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-  return `${base}-${code}`
-}
 
 // ============================================================
 // TEAMS
@@ -650,11 +639,12 @@ export async function searchUsers(
   limit = 10
 ): Promise<{ id: string; login: string; avatar_url?: string }[]> {
   if (!query || query.length < 2) return []
+  const clean = query.replace(/[%_\\]/g, ' ').slice(0, 40)
 
   const { data, error } = await client
     .from('profiles')
     .select('id, login, avatar_url')
-    .ilike('login', `%${query}%`)
+    .ilike('login', `%${clean.replace(/[(),\s.]/g, ' ')}%`)
     .limit(limit)
 
   if (error) throw new Error(error.message)
@@ -781,8 +771,8 @@ export async function getShowcaseRequests(
     project_name: r.project?.name,
     project_owner: r.project?.owner,
     requester_login: r.requester?.login,
-    team_name: r.team?.name,
-    team_code: r.team?.code,
+    team_name: r.project?.team?.name,
+    team_code: r.project?.team?.code,
   })) as ShowcaseRequest[]
 
   return { requests, total: count || 0 }
@@ -816,6 +806,14 @@ export async function reviewShowcaseRequest(
   if (request.status !== 'pending') throw new Error('Request already reviewed')
 
   const newStatus = action === 'approve' ? 'approved' : 'rejected'
+
+  // Approval must actually mark the project showcased — without this the
+  // request chain never writes is_showcased and defeats re-request guards
+  const { error: projErr } = await client
+    .from('projects')
+    .update({ is_showcased: action === 'approve' })
+    .eq('id', request.project_id)
+  if (projErr) throw new Error(projErr.message)
 
   const { data, error } = await client
     .from('showcase_requests')
@@ -865,6 +863,11 @@ export async function revokeShowcase(
     .update({ status: 'rejected' })
     .eq('project_id', projectId)
     .eq('status', 'approved')
-
   if (error) throw new Error(error.message)
+
+  const { error: projErr } = await client
+    .from('projects')
+    .update({ is_showcased: false })
+    .eq('id', projectId)
+  if (projErr) throw new Error(projErr.message)
 }

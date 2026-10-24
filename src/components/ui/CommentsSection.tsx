@@ -29,10 +29,9 @@ export function CommentsSection({ projectId, onCountChange }: CommentsSectionPro
     setLoading(true)
     try {
       const response = await fetch(`/api/projects/${projectId}/comments`)
-      if (response.ok) {
-        const data = await response.json()
-        setComments(data)
-      }
+      if (!response.ok) throw new Error(`Failed to load comments (${response.status})`)
+      const data = await response.json()
+      setComments(Array.isArray(data) ? data : [])
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load comments')
     } finally {

@@ -5,7 +5,6 @@ const PUBLIC_PATHS = [
   '/',
   '/auth/signin',
   '/auth/callback',
-  '/api/canvas/feed',
   '/api/feed/live',
   '/dev-tty',
   '/dev/ui',

@@ -22,11 +22,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
   }
 
-  const body = await request.json()
-  const { delivery_id } = body
+  const body = await request.json().catch(() => null)
+  if (!body) return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  const { delivery_id } = body as { delivery_id?: string }
 
-  if (!delivery_id) {
-    return NextResponse.json({ error: 'delivery_id is required' }, { status: 400 })
+  if (!delivery_id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(delivery_id)) {
+    return NextResponse.json({ error: 'Valid delivery_id (uuid) is required' }, { status: 400 })
   }
 
   // Get the failed delivery
@@ -58,27 +59,20 @@ export async function POST(request: NextRequest) {
   // Re-deliver
   const result = await deliverWebhook(webhook as Webhook, delivery.event, delivery.payload)
 
-  // Log the new delivery
-  await supabase.from('webhook_deliveries').insert({
-    webhook_id: delivery.webhook_id,
-    event: delivery.event,
-    payload: delivery.payload,
-    status_code: result.statusCode,
-    response_body: result.responseBody,
-    duration_ms: result.durationMs,
-    success: result.success,
+  // Log delivery + bump webhook counters. Direct inserts/updates here hit
+  // RLS (admins aren't owners by default), so use the SECURITY DEFINER rpc.
+  const { error: logErr } = await supabase.rpc('log_webhook_delivery', {
+    p_webhook_id: delivery.webhook_id,
+    p_event: delivery.event,
+    p_payload: delivery.payload,
+    p_status_code: result.statusCode,
+    p_response_body: result.responseBody,
+    p_duration_ms: result.durationMs,
+    p_success: result.success,
   })
-
-  // Update webhook status
-  const newFailureCount = result.success ? 0 : webhook.failure_count + 1
-  await supabase
-    .from('webhooks')
-    .update({
-      last_triggered_at: new Date().toISOString(),
-      last_status: result.statusCode,
-      failure_count: newFailureCount,
-    })
-    .eq('id', delivery.webhook_id)
+  if (logErr) {
+    return NextResponse.json({ error: logErr.message }, { status: 500 })
+  }
 
   return NextResponse.json({
     success: result.success,

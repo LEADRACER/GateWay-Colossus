@@ -15,7 +15,6 @@ const statusMap: Record<string, { variant: 'success' | 'warning' | 'default' | '
   active: { variant: 'success', label: 'Active' },
   'in development': { variant: 'warning', label: 'In Development' },
   archived: { variant: 'default', label: 'Archived' },
-  abandoned: { variant: 'error', label: 'Abandoned' },
 }
 
 export function ProjectCard({ project }: Props) {

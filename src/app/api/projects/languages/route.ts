@@ -14,6 +14,6 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const languages = (data || []).map((d: { repo_language: string }) => d.repo_language).filter(Boolean)
+  const languages = [...new Set((data || []).map((d: { repo_language: string }) => d.repo_language).filter(Boolean))]
   return NextResponse.json(languages)
 }

@@ -10,6 +10,7 @@ import { Key, Plus, Trash2, Copy, Check } from 'lucide-react'
 export default function APIKeysPage() {
   const [keys, setKeys] = useState<APIKey[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [newKeyName, setNewKeyName] = useState('')
   const [createdKey, setCreatedKey] = useState<{ rawKey: string; name: string } | null>(null)
   const [copied, setCopied] = useState(false)
@@ -20,8 +21,8 @@ export default function APIKeysPage() {
       const supabase = createClient()
       const data = await listAPIKeys(supabase)
       setKeys(data)
-    } catch {
-      // fail silently
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load API keys')
     } finally {
       setLoading(false)
     }
@@ -38,18 +39,19 @@ export default function APIKeysPage() {
       setCreatedKey({ rawKey: result.rawKey, name: result.key.name })
       setNewKeyName('')
       await load()
-    } catch {
-      // fail silently
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to create API key')
     }
   }
 
   async function handleDelete(keyId: string) {
     try {
+      setError('')
       const supabase = createClient()
       await deleteAPIKey(supabase, keyId)
       await load()
-    } catch {
-      // fail silently
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete API key')
     }
   }
 
@@ -69,6 +71,11 @@ export default function APIKeysPage() {
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: 700 }}>
+      {error && (
+        <div style={{ padding: 16, borderRadius: 12, background: 'var(--color-surface)', border: '1px solid var(--color-error, #f87171)', marginBottom: 20 }}>
+          <span style={{ fontSize: 13, color: 'var(--color-text)' }}>{error}</span>
+        </div>
+      )}
       {/* Created key modal */}
       {createdKey && (
         <div style={{
