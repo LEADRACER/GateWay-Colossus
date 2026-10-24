@@ -25,38 +25,28 @@ export async function createTeam(
   input: { name: string; description?: string; avatar_url?: string; is_public?: boolean; is_locked?: boolean },
   leaderId: string
 ): Promise<Team> {
-  const { data: team, error } = await client
-    .from('teams')
-    .insert({
-      name: input.name,
-      description: input.description,
-      avatar_url: input.avatar_url,
-      leader_id: leaderId,
-      is_public: input.is_public ?? true,
-      is_locked: input.is_locked ?? false,
+  // Atomic create via rpc: the teams row and the leader member row either
+  // both succeed or both roll back (supabase-js cannot do multi-statement
+  // transactions, so without this a member-side failure leaves an orphan).
+  const { data, error } = await client
+    .rpc('create_team_with_leader', {
+      p_name: input.name,
+      p_description: input.description ?? null,
+      p_avatar_url: input.avatar_url ?? null,
+      p_is_public: input.is_public ?? true,
+      p_is_locked: input.is_locked ?? false,
+      p_leader: leaderId,
     })
-    .select()
     .single()
 
   if (error) throw new Error(error.message)
 
-  // Add leader as team member
-  const { error: memberError } = await client
-    .from('team_members')
-    .insert({
-      team_id: team.id,
-      user_id: leaderId,
-      role: 'leader',
-      status: 'active',
-    })
-
-  if (memberError) throw new Error(memberError.message)
-
+  const team = data as unknown as Team & { id: string }
   return {
     ...team,
     leader_login: '',
     leader_avatar_url: '',
-  } as Team
+  }
 }
 
 export async function getTeam(
@@ -576,8 +566,8 @@ export async function acceptJoinRequest(
     ...data,
     login: data.user?.login,
     avatar_url: data.user?.avatar_url,
-    team_name: data.project?.team?.name,
-    team_code: data.project?.team?.code,
+    team_name: data.team?.name,
+    team_code: data.team?.code,
   } as TeamJoinRequest
 }
 
@@ -620,8 +610,8 @@ export async function rejectJoinRequest(
     ...data,
     login: data.user?.login,
     avatar_url: data.user?.avatar_url,
-    team_name: data.project?.team?.name,
-    team_code: data.project?.team?.code,
+    team_name: data.team?.name,
+    team_code: data.team?.code,
   } as TeamJoinRequest
 }
 
